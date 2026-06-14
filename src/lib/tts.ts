@@ -40,8 +40,7 @@ function getBestGermanVoice(): SpeechSynthesisVoice | null {
     return 60
   }
 
-  const best = [...voices].sort((a, b) => score(b) - score(a))[0]
-  return score(best) < 50 ? null : best
+  return [...voices].sort((a, b) => score(b) - score(a))[0]
 }
 
 export function speakColor(color: PickedColor): void {

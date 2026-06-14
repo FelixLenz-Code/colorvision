@@ -8,9 +8,10 @@ interface Props {
   onClearAll: () => void
   onFavorite: (entry: HistoryEntry) => void
   isFavorite: (id: string) => boolean
+  onOpenDetail: (entry: HistoryEntry) => void
 }
 
-export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite }: Props) {
+export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite, onOpenDetail }: Props) {
   if (history.length === 0) {
     return (
       <div className="flex flex-col h-full">
@@ -64,7 +65,11 @@ export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite,
           const fav = isFavorite(entry.id)
           const time = new Date(entry.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
           return (
-            <div key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors border-b border-border/50">
+            <div
+              key={entry.id}
+              onClick={() => onOpenDetail(entry)}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 cursor-pointer"
+            >
               <div
                 className="w-10 h-10 rounded-xl shrink-0 shadow-sm"
                 style={{ backgroundColor: entry.hex }}
@@ -82,14 +87,14 @@ export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite,
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => onFavorite(entry)}
+                  onClick={e => { e.stopPropagation(); onFavorite(entry) }}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
                   title={fav ? 'Favorit' : 'Zu Favoriten'}
                 >
                   <Heart className="w-4 h-4" fill={fav ? '#ff4d6d' : 'none'} stroke={fav ? '#ff4d6d' : 'currentColor'} />
                 </button>
                 <button
-                  onClick={() => speakColor(entry)}
+                  onClick={e => { e.stopPropagation(); speakColor(entry) }}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
                   title="Vorlesen"
                 >

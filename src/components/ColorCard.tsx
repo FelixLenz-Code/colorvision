@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Heart, Volume2, VolumeX, Copy, Check, Info } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
 import { speakColor, stopSpeaking } from '../lib/tts'
@@ -11,10 +11,25 @@ interface Props {
   onToggleAutoSpeak: () => void
 }
 
+function getTextColor(l: number): string {
+  return l > 55 ? '#1a1a2e' : '#ffffff'
+}
+
 export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpeak, onToggleAutoSpeak }: Props) {
   const [speaking, setSpeaking] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
+  const speakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const textColor = getTextColor(color.hsl.l)
+
+  // Stop speaking when color changes
+  useEffect(() => {
+    setSpeaking(false)
+    stopSpeaking()
+    return () => {
+      if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
+    }
+  }, [color.hex])
 
   const copyField = async (field: string, value: string) => {
     await navigator.clipboard.writeText(value).catch(() => {})
@@ -26,10 +41,11 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
     if (speaking) {
       stopSpeaking()
       setSpeaking(false)
+      if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
     } else {
       setSpeaking(true)
       speakColor(color)
-      setTimeout(() => setSpeaking(false), 4000)
+      speakTimeoutRef.current = setTimeout(() => setSpeaking(false), 5000)
     }
   }
 
@@ -42,16 +58,13 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Color header */}
-      <div
-        className="shrink-0 px-5 py-4"
-        style={{ backgroundColor: color.hex }}
-      >
+      <div className="shrink-0 px-5 py-4" style={{ backgroundColor: color.hex }}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold leading-none" style={{ color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}>
+            <h2 className="text-2xl font-bold leading-none" style={{ color: textColor }}>
               {color.nameDe}
             </h2>
-            <p className="text-sm mt-1 opacity-75" style={{ color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}>
+            <p className="text-sm mt-1 opacity-75" style={{ color: textColor }}>
               {color.nameEn}
             </p>
           </div>
@@ -61,18 +74,20 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
               title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+              data-testid="favorite-btn"
             >
               <Heart
                 className="w-4 h-4"
-                fill={isFavorite ? 'currentColor' : 'none'}
-                style={{ color: isFavorite ? '#ff4d6d' : (color.hsl.l > 55 ? '#1a1a2e' : '#ffffff') }}
+                fill={isFavorite ? '#ff4d6d' : 'none'}
+                stroke={isFavorite ? '#ff4d6d' : textColor}
               />
             </button>
             <button
               onClick={() => setShowDescription(v => !v)}
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}
-              title="Farbinformationen"
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: textColor }}
+              title="Farberklärung"
+              data-testid="info-btn"
             >
               <Info className="w-4 h-4" />
             </button>
@@ -80,7 +95,7 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
         </div>
       </div>
 
-      {/* Description (expandable) */}
+      {/* Description */}
       {showDescription && (
         <div className="px-5 py-3 bg-muted/60 border-b border-border shrink-0">
           <p className="text-sm text-muted-foreground leading-relaxed">{color.descriptionDe}</p>
@@ -89,19 +104,14 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
 
       {/* Details */}
       <div className="flex-1 p-4 space-y-3">
-        {/* Brightness */}
         <div className="bg-card rounded-xl p-3 border border-border">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Helligkeit</p>
           <p className="text-lg font-bold text-foreground capitalize">{color.brightnessDe}</p>
         </div>
 
-        {/* Color values */}
         <div className="grid grid-cols-3 gap-2">
           {colorValues.map(({ label, field, value }) => (
-            <div
-              key={field}
-              className="bg-muted/60 rounded-xl p-2.5 flex flex-col items-center gap-1 group relative"
-            >
+            <div key={field} className="bg-muted/60 rounded-xl p-2.5 flex flex-col items-center gap-1 group relative">
               <div className="flex items-center gap-1 w-full justify-between">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
                 <button
@@ -111,13 +121,10 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
                 >
                   {copiedField === field
                     ? <Check className="w-3 h-3 text-green-500" />
-                    : <Copy className="w-3 h-3" />
-                  }
+                    : <Copy className="w-3 h-3" />}
                 </button>
               </div>
-              <p className="font-mono text-xs font-semibold text-foreground text-center leading-tight break-all">
-                {value}
-              </p>
+              <p className="font-mono text-xs font-semibold text-foreground text-center leading-tight break-all">{value}</p>
               {copiedField === field && (
                 <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none">
                   Kopiert!
@@ -127,7 +134,6 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
           ))}
         </div>
 
-        {/* TTS buttons */}
         <div className="flex gap-2">
           <button
             onClick={handleSpeak}
@@ -157,7 +163,9 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
         </div>
 
         <p className="text-[11px] text-muted-foreground text-center">
-          {autoSpeak ? 'Jede erkannte Farbe wird automatisch vorgelesen' : 'Auto-Vorlesen ist deaktiviert'}
+          {autoSpeak
+            ? 'Jede erkannte Farbe wird automatisch vorgelesen'
+            : 'Auto-Vorlesen ist deaktiviert'}
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Eye, Palette, Clock, Heart, Info } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
@@ -6,11 +6,13 @@ import ColorCard from './components/ColorCard'
 import HistoryTab from './components/HistoryTab'
 import FavoritesTab from './components/FavoritesTab'
 import LegalModal from './components/LegalModal'
+import SnapSheet from './components/SnapSheet'
+import ColorDetailSheet, { type ColorDetail } from './components/ColorDetailSheet'
 import type { PickedColor } from './lib/colors'
 import { speakColor } from './lib/tts'
 import {
   type HistoryEntry, type FavoriteEntry, type FavoriteList,
-  loadHistory, saveHistory as _saveHistory, addToHistory, clearHistory,
+  loadHistory, saveHistory, addToHistory, clearHistory,
   loadFavorites, saveFavorites,
   loadLists, saveLists,
   importFavoritesFromCsv,
@@ -18,6 +20,7 @@ import {
 
 type Tab = 'picker' | 'history' | 'favorites'
 type LegalPage = 'impressum' | 'datenschutz' | null
+type SnapPos = 'peek' | 'mid' | 'full'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('picker')
@@ -31,12 +34,14 @@ export default function App() {
   const [legalPage, setLegalPage] = useState<LegalPage>(null)
   const [legalMenuOpen, setLegalMenuOpen] = useState(false)
   const [addToFavListOpen, setAddToFavListOpen] = useState(false)
-  void _saveHistory
+  const [sheetSnap, setSheetSnap] = useState<SnapPos>('peek')
+  const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
 
   const handleImageLoaded = (url: string) => {
     setImageUrl(url)
     setPickedColor(null)
     setPickedPoint(null)
+    setSheetSnap('peek')
   }
 
   const handleColorPicked = useCallback((color: PickedColor, x: number, y: number) => {
@@ -44,6 +49,7 @@ export default function App() {
     setPickedPoint({ x, y })
     addToHistory(color)
     setHistory(loadHistory())
+    setSheetSnap('mid')
     if (autoSpeak) speakColor(color)
   }, [autoSpeak])
 
@@ -51,6 +57,7 @@ export default function App() {
     setImageUrl(null)
     setPickedColor(null)
     setPickedPoint(null)
+    setSheetSnap('peek')
   }
 
   const isFavorite = useCallback((historyId: string) => {
@@ -138,6 +145,11 @@ export default function App() {
     setFavorites(updated)
   }
 
+  const handleReorderLists = (reordered: FavoriteList[]) => {
+    saveLists(reordered)
+    setLists(reordered)
+  }
+
   const handleImportFavorites = (file: File) => {
     file.text().then(csv => {
       const imported = importFavoritesFromCsv(csv, lists)
@@ -147,7 +159,46 @@ export default function App() {
     })
   }
 
+  const handleRemoveHistoryEntry = (id: string) => {
+    const updated = history.filter(h => h.id !== id)
+    saveHistory(updated)
+    setHistory(updated)
+  }
+
+  const handleOpenDetailFromHistory = (entry: HistoryEntry) => {
+    setDetail({ color: entry, sourceId: entry.id, source: 'history' })
+  }
+
+  const handleOpenDetailFromFavorites = (entry: FavoriteEntry) => {
+    setDetail({ color: { ...entry, timestamp: entry.savedAt }, sourceId: entry.id, source: 'favorites' })
+  }
+
+  const detailIsFavorite = detail
+    ? favorites.some(f => f.hex === detail.color.hex && f.nameDe === detail.color.nameDe)
+    : false
+
+  const handleDetailToggleFavorite = () => {
+    if (!detail) return
+    if (detailIsFavorite) removeFavoriteByHex(detail.color.hex, detail.color.nameDe)
+    else addFavoriteColor(detail.color)
+  }
+
+  const handleDetailDelete = () => {
+    if (!detail) return
+    if (detail.source === 'history') handleRemoveHistoryEntry(detail.sourceId)
+    else handleRemoveFavorite(detail.sourceId)
+    setDetail(null)
+  }
+
+  // Close detail if the entry no longer exists (e.g. cleared history)
+  useEffect(() => {
+    if (!detail) return
+    if (detail.source === 'history' && !history.find(h => h.id === detail.sourceId)) setDetail(null)
+    if (detail.source === 'favorites' && !favorites.find(f => f.id === detail.sourceId)) setDetail(null)
+  }, [history, favorites])
+
   const historyBadge = history.length > 0 ? history.length : null
+  const favoritesBadge = favorites.length > 0 ? favorites.length : null
 
   const tabs: { id: Tab; label: string; Icon: typeof Palette }[] = [
     { id: 'picker', label: 'Farbpicker', Icon: Palette },
@@ -185,6 +236,11 @@ export default function App() {
               {id === 'history' && historyBadge && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
                   {historyBadge > 9 ? '9+' : historyBadge}
+                </span>
+              )}
+              {id === 'favorites' && favoritesBadge && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-rose-500 text-white rounded-full">
+                  {favoritesBadge > 9 ? '9+' : favoritesBadge}
                 </span>
               )}
             </button>
@@ -229,12 +285,7 @@ export default function App() {
                   pickedPoint={pickedPoint}
                 />
               </div>
-              <div className="flex justify-center py-1.5 bg-card border-t border-border shrink-0">
-                <div className="flex gap-1">
-                  {[0,1,2].map(i => <div key={i} className="w-8 h-1 rounded-full bg-border" />)}
-                </div>
-              </div>
-              <div className="shrink-0 overflow-y-auto bg-card" style={{ minHeight: pickedColor ? '180px' : '80px', maxHeight: '45vh' }}>
+              <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
                 {pickedColor ? (
                   <ColorCard
                     color={pickedColor}
@@ -253,7 +304,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
-              </div>
+              </SnapSheet>
             </div>
           )}
         </div>
@@ -266,6 +317,7 @@ export default function App() {
             onClearAll={handleClearHistory}
             onFavorite={handleFavoriteFromHistory}
             isFavorite={isFavorite}
+            onOpenDetail={handleOpenDetailFromHistory}
           />
         </div>
 
@@ -278,7 +330,9 @@ export default function App() {
             onRenameList={handleRenameList}
             onDeleteList={handleDeleteList}
             onRemoveFavorite={handleRemoveFavorite}
+            onReorderLists={handleReorderLists}
             onImport={handleImportFavorites}
+            onOpenDetail={handleOpenDetailFromFavorites}
           />
         </div>
       </main>
@@ -307,6 +361,17 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Color detail sheet */}
+      {detail && (
+        <ColorDetailSheet
+          color={detail.color}
+          isFavorite={detailIsFavorite}
+          onToggleFavorite={handleDetailToggleFavorite}
+          onDelete={handleDetailDelete}
+          onClose={() => setDetail(null)}
+        />
       )}
 
       {legalPage && <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />}

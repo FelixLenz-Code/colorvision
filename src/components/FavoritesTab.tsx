@@ -11,16 +11,20 @@ interface Props {
   onRenameList: (id: string, name: string) => void
   onDeleteList: (id: string) => void
   onRemoveFavorite: (id: string) => void
+  onReorderLists: (lists: FavoriteList[]) => void
   onImport: (file: File) => void
+  onOpenDetail: (entry: FavoriteEntry) => void
 }
 
-export default function FavoritesTab({ favorites, lists, onAddList, onRenameList, onDeleteList, onRemoveFavorite, onImport }: Props) {
+export default function FavoritesTab({ favorites, lists, onAddList, onRenameList, onDeleteList, onRemoveFavorite, onReorderLists, onImport, onOpenDetail }: Props) {
   const [activeListId, setActiveListId] = useState<string>(lists[0]?.id ?? 'default')
   const [creatingList, setCreatingList] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [listMenuId, setListMenuId] = useState<string | null>(null)
+  const [dragListId, setDragListId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
   const activeList = lists.find(l => l.id === activeListId) ?? lists[0]
@@ -51,6 +55,18 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
     e.target.value = ''
   }
 
+  const handleDrop = (targetId: string) => {
+    if (!dragListId || dragListId === targetId) return
+    const fromIdx = lists.findIndex(l => l.id === dragListId)
+    const toIdx = lists.findIndex(l => l.id === targetId)
+    const reordered = [...lists]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, moved)
+    onReorderLists(reordered)
+    setDragListId(null)
+    setDragOverId(null)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -58,6 +74,11 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
         <div className="flex items-center gap-2">
           <Heart className="w-4 h-4 text-rose-500" />
           <h2 className="font-semibold text-foreground">Favoriten</h2>
+          {favorites.length > 0 && (
+            <span className="text-xs bg-rose-500 text-white font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+              {favorites.length > 99 ? '99+' : favorites.length}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -89,10 +110,18 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
         onChange={handleImportFile}
       />
 
-      {/* List tabs */}
+      {/* List tabs — drag to reorder */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-muted/30 shrink-0 overflow-x-auto">
         {lists.map(list => (
-          <div key={list.id} className="relative shrink-0">
+          <div
+            key={list.id}
+            draggable
+            onDragStart={() => setDragListId(list.id)}
+            onDragEnd={() => { setDragListId(null); setDragOverId(null) }}
+            onDragOver={e => { e.preventDefault(); if (list.id !== dragListId) setDragOverId(list.id) }}
+            onDrop={() => handleDrop(list.id)}
+            className={`relative shrink-0 transition-opacity ${dragListId === list.id ? 'opacity-40' : ''} ${dragOverId === list.id && dragListId !== list.id ? 'ring-2 ring-primary ring-inset rounded-lg' : ''}`}
+          >
             <button
               onClick={() => setActiveListId(list.id)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all pr-7 ${
@@ -188,7 +217,11 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
       ) : (
         <div className="flex-1 overflow-y-auto">
           {activeFavorites.map(entry => (
-            <div key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors border-b border-border/50">
+            <div
+              key={entry.id}
+              onClick={() => onOpenDetail(entry)}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 cursor-pointer"
+            >
               <div className="w-10 h-10 rounded-xl shrink-0 shadow-sm" style={{ backgroundColor: entry.hex }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
@@ -198,10 +231,16 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
                 <span className="font-mono text-xs text-muted-foreground">{entry.hex}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => speakColor(entry)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground">
+                <button
+                  onClick={e => { e.stopPropagation(); speakColor(entry) }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
+                >
                   <Volume2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => onRemoveFavorite(entry.id)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-red-500">
+                <button
+                  onClick={e => { e.stopPropagation(); onRemoveFavorite(entry.id) }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-red-500"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
