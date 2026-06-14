@@ -1,0 +1,165 @@
+import { useState } from 'react'
+import { Heart, Volume2, VolumeX, Copy, Check, Info } from 'lucide-react'
+import type { PickedColor } from '../lib/colors'
+import { speakColor, stopSpeaking } from '../lib/tts'
+
+interface Props {
+  color: PickedColor
+  isFavorite: boolean
+  onToggleFavorite: () => void
+  autoSpeak: boolean
+  onToggleAutoSpeak: () => void
+}
+
+export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpeak, onToggleAutoSpeak }: Props) {
+  const [speaking, setSpeaking] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [showDescription, setShowDescription] = useState(false)
+
+  const copyField = async (field: string, value: string) => {
+    await navigator.clipboard.writeText(value).catch(() => {})
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 1500)
+  }
+
+  const handleSpeak = () => {
+    if (speaking) {
+      stopSpeaking()
+      setSpeaking(false)
+    } else {
+      setSpeaking(true)
+      speakColor(color)
+      setTimeout(() => setSpeaking(false), 4000)
+    }
+  }
+
+  const colorValues = [
+    { label: 'HEX', field: 'hex', value: color.hex },
+    { label: 'RGB', field: 'rgb', value: `${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}` },
+    { label: 'HSL', field: 'hsl', value: `${color.hsl.h}° ${color.hsl.s}% ${color.hsl.l}%` },
+  ]
+
+  return (
+    <div className="flex flex-col h-full overflow-y-auto">
+      {/* Color header */}
+      <div
+        className="shrink-0 px-5 py-4"
+        style={{ backgroundColor: color.hex }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold leading-none" style={{ color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}>
+              {color.nameDe}
+            </h2>
+            <p className="text-sm mt-1 opacity-75" style={{ color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}>
+              {color.nameEn}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onToggleFavorite}
+              className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+              title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+            >
+              <Heart
+                className="w-4 h-4"
+                fill={isFavorite ? 'currentColor' : 'none'}
+                style={{ color: isFavorite ? '#ff4d6d' : (color.hsl.l > 55 ? '#1a1a2e' : '#ffffff') }}
+              />
+            </button>
+            <button
+              onClick={() => setShowDescription(v => !v)}
+              className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: color.hsl.l > 55 ? '#1a1a2e' : '#ffffff' }}
+              title="Farbinformationen"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Description (expandable) */}
+      {showDescription && (
+        <div className="px-5 py-3 bg-muted/60 border-b border-border shrink-0">
+          <p className="text-sm text-muted-foreground leading-relaxed">{color.descriptionDe}</p>
+        </div>
+      )}
+
+      {/* Details */}
+      <div className="flex-1 p-4 space-y-3">
+        {/* Brightness */}
+        <div className="bg-card rounded-xl p-3 border border-border">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Helligkeit</p>
+          <p className="text-lg font-bold text-foreground capitalize">{color.brightnessDe}</p>
+        </div>
+
+        {/* Color values */}
+        <div className="grid grid-cols-3 gap-2">
+          {colorValues.map(({ label, field, value }) => (
+            <div
+              key={field}
+              className="bg-muted/60 rounded-xl p-2.5 flex flex-col items-center gap-1 group relative"
+            >
+              <div className="flex items-center gap-1 w-full justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
+                <button
+                  onClick={() => copyField(field, value)}
+                  className="p-0.5 rounded text-muted-foreground/60 hover:text-foreground active:scale-90 transition-all"
+                  title={`${label} kopieren`}
+                >
+                  {copiedField === field
+                    ? <Check className="w-3 h-3 text-green-500" />
+                    : <Copy className="w-3 h-3" />
+                  }
+                </button>
+              </div>
+              <p className="font-mono text-xs font-semibold text-foreground text-center leading-tight break-all">
+                {value}
+              </p>
+              {copiedField === field && (
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none">
+                  Kopiert!
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* TTS buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleSpeak}
+            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+              speaking
+                ? 'bg-background border-2 border-primary text-primary'
+                : 'bg-primary text-primary-foreground hover:opacity-90'
+            }`}
+            data-testid="speak-btn"
+          >
+            {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {speaking ? 'Stopp' : 'Vorlesen'}
+          </button>
+          <button
+            onClick={onToggleAutoSpeak}
+            className={`px-3.5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-1.5 border-2 ${
+              autoSpeak
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-muted/60 text-muted-foreground hover:border-primary/40'
+            }`}
+            title={autoSpeak ? 'Auto-Vorlesen aktiv' : 'Auto-Vorlesen aus'}
+            data-testid="autospeak-toggle"
+          >
+            {autoSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            <span className="text-xs font-medium">Auto</span>
+          </button>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground text-center">
+          {autoSpeak ? 'Jede erkannte Farbe wird automatisch vorgelesen' : 'Auto-Vorlesen ist deaktiviert'}
+        </p>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 20% 97%;
+  --foreground: 222 20% 10%;
+  --card: 0 0% 100%;
+  --border: 220 13% 88%;
+  --primary: 252 100% 65%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 280 90% 60%;
+  --muted: 220 14% 94%;
+  --muted-foreground: 220 10% 50%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+canvas {
+  touch-action: none;
+}
