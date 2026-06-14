@@ -3,12 +3,15 @@ import type { PickedColor } from './colors'
 export interface HistoryEntry extends PickedColor {
   id: string
   timestamp: number
+  sourceFile?: string
 }
 
 export interface FavoriteEntry extends PickedColor {
   id: string
   savedAt: number
   listId: string
+  sourceFile?: string
+  customLabel?: string
 }
 
 export interface FavoriteList {
@@ -31,8 +34,8 @@ export function saveHistory(history: HistoryEntry[]): void {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 200)))
 }
 
-export function addToHistory(color: PickedColor): HistoryEntry {
-  const entry: HistoryEntry = { ...color, id: crypto.randomUUID(), timestamp: Date.now() }
+export function addToHistory(color: PickedColor, sourceFile?: string): HistoryEntry {
+  const entry: HistoryEntry = { ...color, id: crypto.randomUUID(), timestamp: Date.now(), sourceFile }
   const history = loadHistory()
   history.unshift(entry)
   saveHistory(history)

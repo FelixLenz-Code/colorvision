@@ -9,13 +9,14 @@ interface Props {
   onToggleFavorite: () => void
   autoSpeak: boolean
   onToggleAutoSpeak: () => void
+  customLabel?: string
 }
 
 function getTextColor(l: number): string {
   return l > 55 ? '#1a1a2e' : '#ffffff'
 }
 
-export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpeak, onToggleAutoSpeak }: Props) {
+export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpeak, onToggleAutoSpeak, customLabel }: Props) {
   const [speaking, setSpeaking] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
@@ -64,9 +65,15 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
             <h2 className="text-2xl font-bold leading-none" style={{ color: textColor }}>
               {color.nameDe}
             </h2>
-            <p className="text-sm mt-1 opacity-75" style={{ color: textColor }}>
+            <p className="text-sm mt-0.5 opacity-75" style={{ color: textColor }}>
               {color.nameEn}
             </p>
+            {customLabel && (
+              <p className="text-xs mt-1 font-semibold px-2 py-0.5 rounded-full inline-block"
+                style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: textColor }}>
+                {customLabel}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button

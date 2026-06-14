@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import { Upload, Clipboard, Crosshair, Volume2, Globe, ZoomIn } from 'lucide-react'
 
 interface Props {
-  onImageLoaded: (url: string) => void
+  onImageLoaded: (url: string, fileName?: string) => void
 }
 
 export default function UploadScreen({ onImageLoaded }: Props) {
@@ -12,7 +12,7 @@ export default function UploadScreen({ onImageLoaded }: Props) {
   const loadFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return
     const url = URL.createObjectURL(file)
-    onImageLoaded(url)
+    onImageLoaded(url, file.name)
   }, [onImageLoaded])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

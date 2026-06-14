@@ -36,22 +36,24 @@ export default function App() {
   const [addToFavListOpen, setAddToFavListOpen] = useState(false)
   const [sheetSnap, setSheetSnap] = useState<SnapPos>('peek')
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
+  const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
 
-  const handleImageLoaded = (url: string) => {
+  const handleImageLoaded = (url: string, fileName?: string) => {
     setImageUrl(url)
     setPickedColor(null)
     setPickedPoint(null)
     setSheetSnap('peek')
+    setImageFileName(fileName)
   }
 
   const handleColorPicked = useCallback((color: PickedColor, x: number, y: number) => {
     setPickedColor(color)
     setPickedPoint({ x, y })
-    addToHistory(color)
+    addToHistory(color, imageFileName)
     setHistory(loadHistory())
     setSheetSnap('mid')
     if (autoSpeak) speakColor(color)
-  }, [autoSpeak])
+  }, [autoSpeak, imageFileName])
 
   const handleNewImage = () => {
     setImageUrl(null)
@@ -66,16 +68,20 @@ export default function App() {
     return favorites.some(f => f.hex === entry.hex && f.nameDe === entry.nameDe)
   }, [favorites, history])
 
-  const isPickedColorFavorite = pickedColor
-    ? favorites.some(f => f.hex === pickedColor.hex && f.nameDe === pickedColor.nameDe)
-    : false
+  const matchingFavorite = pickedColor
+    ? favorites.find(f => f.hex === pickedColor.hex && f.nameDe === pickedColor.nameDe)
+    : undefined
 
-  const addFavoriteColor = useCallback((color: PickedColor, listId = lists[0]?.id ?? 'default') => {
+  const isPickedColorFavorite = !!matchingFavorite
+  const pickedCustomLabel = matchingFavorite?.customLabel
+
+  const addFavoriteColor = useCallback((color: PickedColor, listId = lists[0]?.id ?? 'default', sourceFile?: string) => {
     const entry: FavoriteEntry = {
       ...color,
       id: crypto.randomUUID(),
       savedAt: Date.now(),
       listId,
+      sourceFile: (color as FavoriteEntry).sourceFile ?? sourceFile,
     }
     const updated = [...favorites, entry]
     saveFavorites(updated)
@@ -95,20 +101,20 @@ export default function App() {
     } else if (lists.length > 1) {
       setAddToFavListOpen(true)
     } else {
-      addFavoriteColor(pickedColor)
+      addFavoriteColor(pickedColor, undefined, imageFileName)
     }
   }
 
   const handleFavoriteFromHistory = (entry: HistoryEntry) => {
     const alreadyFav = favorites.some(f => f.hex === entry.hex && f.nameDe === entry.nameDe)
     if (alreadyFav) removeFavoriteByHex(entry.hex, entry.nameDe)
-    else addFavoriteColor(entry)
+    else addFavoriteColor(entry, undefined, entry.sourceFile)
   }
 
   const handleSaveAllHistory = () => {
     for (const entry of history) {
       const alreadyFav = favorites.some(f => f.hex === entry.hex && f.nameDe === entry.nameDe)
-      if (!alreadyFav) addFavoriteColor(entry)
+      if (!alreadyFav) addFavoriteColor(entry, undefined, entry.sourceFile)
     }
   }
 
@@ -170,7 +176,7 @@ export default function App() {
   }
 
   const handleOpenDetailFromFavorites = (entry: FavoriteEntry) => {
-    setDetail({ color: { ...entry, timestamp: entry.savedAt }, sourceId: entry.id, source: 'favorites' })
+    setDetail({ color: { ...entry, timestamp: entry.savedAt, customLabel: entry.customLabel }, sourceId: entry.id, source: 'favorites' })
   }
 
   const detailIsFavorite = detail
@@ -188,6 +194,14 @@ export default function App() {
     if (detail.source === 'history') handleRemoveHistoryEntry(detail.sourceId)
     else handleRemoveFavorite(detail.sourceId)
     setDetail(null)
+  }
+
+  const handleSaveCustomLabel = (label: string) => {
+    if (!detail || detail.source !== 'favorites') return
+    const updated = favorites.map(f => f.id === detail.sourceId ? { ...f, customLabel: label || undefined } : f)
+    saveFavorites(updated)
+    setFavorites(updated)
+    setDetail(prev => prev ? { ...prev, color: { ...prev.color, customLabel: label || undefined } } : null)
   }
 
   // Close detail if the entry no longer exists (e.g. cleared history)
@@ -293,6 +307,7 @@ export default function App() {
                     onToggleFavorite={handleTogglePickedFavorite}
                     autoSpeak={autoSpeak}
                     onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
+                    customLabel={pickedCustomLabel}
                   />
                 ) : (
                   <div className="flex items-center justify-center p-6 text-center">
@@ -349,7 +364,7 @@ export default function App() {
               {lists.map(list => (
                 <button
                   key={list.id}
-                  onClick={() => { addFavoriteColor(pickedColor, list.id); setAddToFavListOpen(false) }}
+                  onClick={() => { addFavoriteColor(pickedColor, list.id, imageFileName); setAddToFavListOpen(false) }}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/60 transition-colors text-left"
                 >
                   <span className="font-medium text-sm text-foreground">{list.name}</span>
@@ -371,6 +386,7 @@ export default function App() {
           onToggleFavorite={handleDetailToggleFavorite}
           onDelete={handleDetailDelete}
           onClose={() => setDetail(null)}
+          onSaveCustomLabel={detail.source === 'favorites' ? handleSaveCustomLabel : undefined}
         />
       )}
 
