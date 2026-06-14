@@ -36,9 +36,10 @@ function createWindow() {
   nativeTheme.themeSource = 'light'
 }
 
-ipcMain.handle('save-file', async (_event, filename, content) => {
-  const { filePath } = await dialog.showSaveDialog({
-    defaultPath: filename,
+ipcMain.handle('save-file', async (event, filename, content) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const { filePath } = await dialog.showSaveDialog(win, {
+    defaultPath: path.join(app.getPath('downloads'), filename),
     filters: [{ name: 'CSV', extensions: ['csv'] }],
   })
   if (!filePath) return false
@@ -46,8 +47,9 @@ ipcMain.handle('save-file', async (_event, filename, content) => {
   return true
 })
 
-ipcMain.handle('open-file', async () => {
-  const { filePaths } = await dialog.showOpenDialog({
+ipcMain.handle('open-file', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const { filePaths } = await dialog.showOpenDialog(win, {
     filters: [{ name: 'CSV', extensions: ['csv'] }],
     properties: ['openFile'],
   })
