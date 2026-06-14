@@ -1,27 +1,51 @@
 # ColorVision – Farberkennung
 
-Eine Web-App und Desktop-Anwendung zur Farberkennung in Bildern – entwickelt für Menschen mit Farbenfehlsichtigkeit.
+> Farben erkennen und benennen – für Menschen mit Farbenfehlsichtigkeit
+
+[![Release](https://img.shields.io/github/v/release/FelixLenz-Code/colorvision)](https://github.com/FelixLenz-Code/colorvision/releases/latest)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/deed.de)
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Farbe erkannt</b></td>
+    <td align="center"><b>Dark Mode</b></td>
+    <td align="center"><b>Querformat</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/light-mode.png" width="220" alt="Light Mode mit erkannter Farbe"/></td>
+    <td><img src="screenshots/dark-mode.png" width="220" alt="Dark Mode"/></td>
+    <td><img src="screenshots/landscape.png" width="380" alt="Querformat"/></td>
+  </tr>
+</table>
+
+---
 
 ## Features
 
-- **Farberkennung per Tipp** – Bild laden, auf eine Stelle tippen, Farbe identifizieren
-- **200+ Farbnamen** – Deutsch und Englisch, mit Helligkeitsbeschreibung und Farbbeschreibung
-- **Text-to-Speech** – Farbnamen automatisch vorlesen lassen (Deutsch)
-- **Auto-Vorlesen** – Jede erkannte Farbe wird sofort vorgelesen
-- **Verlauf** – Alle erkannten Farben mit Zeitstempel; einzeln oder alle auf einmal in Favoriten speichern
-- **Favoriten** – Farben in mehreren benutzerdefinierten Listen organisieren
-- **Herz-Toggle im Verlauf** – Farben direkt aus dem Verlauf favorisieren und entfavorisieren
-- **CSV-Import/Export** – Favoritenlisten sichern und auf andere Geräte übertragen
-- **Zoom & Pan** – Mausrad-Zoom und Pinch-to-Zoom auf Touchgeräten
-- **Touch-optimiert** – Funktioniert auf iPad und Android-Tablets (inkl. Debounce gegen Doppelpicks)
-- **PWA** – Installierbar, offline-fähig
-- **Impressum & Datenschutz** – Vollständige rechtliche Informationen integriert
+- **Farberkennung per Tipp** — Bild laden, auf eine Stelle tippen, Farbe sofort identifizieren
+- **200+ Farbnamen** — Deutsch und Englisch, mit Helligkeitsbeschreibung
+- **Text-to-Speech** — Farbnamen automatisch vorlesen lassen (Deutsch)
+- **Auto-Vorlesen** — Jede erkannte Farbe wird sofort vorgelesen
+- **Dark Mode** — Helles und dunkles Design, folgt der Systemeinstellung
+- **Querformat** — Schiebbare Seitenleiste im Landscape-Modus
+- **Verlauf** — Alle erkannten Farben mit Zeitstempel
+- **Favoriten** — Farben in benutzerdefinierten Listen organisieren
+- **CSV-Import/Export** — Favoritenlisten sichern und übertragen
+- **Zoom & Pan** — Mausrad-Zoom und Pinch-to-Zoom auf Touchgeräten
+- **PWA** — Installierbar, offline-fähig
+- **Desktop-App** — Native Apps für Linux, Windows und macOS
+
+---
 
 ## Installation
 
-### Als Desktop-App (empfohlen)
+### Desktop-App (empfohlen)
 
-Lade die passende Datei von der [Releases-Seite](https://github.com/FelixLenz-Code/colorvision/releases) herunter:
+Lade die passende Datei von der [Releases-Seite](https://github.com/FelixLenz-Code/colorvision/releases/latest) herunter:
 
 | Plattform | Datei |
 |-----------|-------|
@@ -35,9 +59,9 @@ chmod +x ColorVision-*.AppImage
 ./ColorVision-*.AppImage
 ```
 
-### Als PWA selbst hosten (Linux-Server)
+### PWA auf eigenem Server hosten
 
-Einzeilige Installation auf einem Ubuntu/Debian-Server:
+Einzeilige Installation auf Ubuntu/Debian:
 
 ```bash
 sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/FelixLenz-Code/colorvision/main/install.sh)"
@@ -46,6 +70,11 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/FelixLenz-Code/colo
 Optionale Parameter:
 ```bash
 sudo bash install.sh --port 8080 --domain meine-domain.de
+```
+
+**Update** einer bestehenden Installation:
+```bash
+sudo bash /opt/colorvision/install.sh
 ```
 
 ### Entwicklungsumgebung
@@ -73,14 +102,20 @@ npm run build          # Nur Web (PWA)
 npm run electron:build # Web + Desktop-Binaries
 ```
 
+---
+
 ## Tech-Stack
 
-- **React 18** + TypeScript + Vite
-- **Tailwind CSS** für das Styling
-- **Lucide React** für Icons
-- **Electron 42** für Desktop-Apps
-- **vite-plugin-pwa** für PWA/Service-Worker
-- **Web Speech API** für Text-to-Speech
+| Bereich | Technologie |
+|---------|-------------|
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS |
+| Icons | Lucide React |
+| Desktop | Electron 42 |
+| PWA | vite-plugin-pwa |
+| TTS | Web Speech API / espeak-ng |
+
+---
 
 ## Hinweis zur KI-Unterstützung
 
@@ -88,6 +123,8 @@ Diese Software wurde vollständig mithilfe von [Claude](https://claude.ai) (eine
 
 **Haftungsausschluss:** Die Software wird so bereitgestellt, wie sie ist (as-is), ohne jegliche Garantie auf Korrektheit, Vollständigkeit oder Eignung für einen bestimmten Zweck. Der Autor übernimmt keinerlei Haftung für Schäden, Datenverluste oder sonstige Probleme, die durch die Verwendung dieser Software entstehen. Die Nutzung erfolgt auf eigene Verantwortung.
 
+---
+
 ## Lizenz
 
-[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.de) – Namensnennung, nicht-kommerziell
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.de) — Namensnennung, nicht-kommerziell
