@@ -14,6 +14,18 @@
   --muted-foreground: 220 10% 50%;
 }
 
+.dark {
+  --background: 222 22% 9%;
+  --foreground: 210 20% 92%;
+  --card: 222 22% 13%;
+  --border: 220 16% 22%;
+  --primary: 252 100% 70%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 280 90% 68%;
+  --muted: 220 18% 17%;
+  --muted-foreground: 220 12% 58%;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

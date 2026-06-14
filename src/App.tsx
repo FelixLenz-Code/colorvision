@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Eye, Palette, Clock, Heart, Info, Volume2, X } from 'lucide-react'
+import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
 import ColorCard from './components/ColorCard'
@@ -51,6 +51,16 @@ export default function App() {
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
   const [ttsWarning, setTtsWarning] = useState(false)
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved) return saved === 'dark'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
 
   useEffect(() => { preloadVoices() }, [])
   useEffect(() => { autoSpeakRef.current = autoSpeak }, [autoSpeak])
@@ -325,7 +335,17 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="relative shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setDark(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            title={dark ? 'Helles Design' : 'Dunkles Design'}
+            aria-label={dark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
+          >
+            {dark ? <Sun className="w-4 h-4 text-muted-foreground" aria-hidden /> : <Moon className="w-4 h-4 text-muted-foreground" aria-hidden />}
+          </button>
+
+          <div className="relative">
           <button
             onClick={() => setLegalMenuOpen(v => !v)}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
@@ -344,6 +364,7 @@ export default function App() {
               </div>
             </>
           )}
+          </div>
         </div>
       </header>
 
