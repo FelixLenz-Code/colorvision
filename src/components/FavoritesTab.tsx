@@ -42,16 +42,19 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
   }
 
   const handleExport = async () => {
-    const csv = exportFavoritesToCsv(favorites, lists)
+    const listName = activeList?.name ?? 'favoriten'
+    const safeName = listName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-äöüß]/g, '')
+    const filename = `colorvision-${safeName}.csv`
+    const csv = exportFavoritesToCsv(activeFavorites, lists)
     if (window.electronAPI) {
-      await window.electronAPI.saveFile?.('colorvision-favoriten.csv', csv)
+      await window.electronAPI.saveFile?.(filename, csv)
       return
     }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'colorvision-favoriten.csv'
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

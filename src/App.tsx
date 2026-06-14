@@ -443,6 +443,7 @@ export default function App() {
             onClearAll={handleClearHistory}
             onFavorite={handleFavoriteFromHistory}
             isFavorite={isFavorite}
+            onRemove={handleRemoveHistoryEntry}
             onOpenDetail={handleOpenDetailFromHistory}
           />
         </div>

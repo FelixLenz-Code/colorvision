@@ -8,10 +8,11 @@ interface Props {
   onClearAll: () => void
   onFavorite: (entry: HistoryEntry) => void
   isFavorite: (id: string) => boolean
+  onRemove: (id: string) => void
   onOpenDetail: (entry: HistoryEntry) => void
 }
 
-export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite, onOpenDetail }: Props) {
+export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite, onRemove, onOpenDetail }: Props) {
   if (history.length === 0) {
     return (
       <div className="flex flex-col h-full">
@@ -99,6 +100,13 @@ export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite,
                   title="Vorlesen"
                 >
                   <Volume2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); onRemove(entry.id) }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 transition-colors text-muted-foreground"
+                  title="Eintrag löschen"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
