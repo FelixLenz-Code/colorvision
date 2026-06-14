@@ -398,6 +398,18 @@ function getBrightness(l: number): { en: string; de: string; deSpeech: string } 
 
 const BORDER_THRESHOLD = 0.09
 
+// Only everyday color names appear in border hints — no exotic shades
+const EVERYDAY_COLORS = new Set([
+  'Rot', 'Orange', 'Gelb', 'Grün', 'Blau', 'Lila', 'Violett', 'Rosa', 'Weiß', 'Schwarz', 'Grau', 'Braun',
+  'Hellblau', 'Hellgrün', 'Hellrosa', 'Türkis', 'Beige', 'Creme',
+  'Gold', 'Silber', 'Lachs', 'Mintgrün', 'Marineblau', 'Himmelblau', 'Magenta', 'Flieder', 'Lavendel',
+  'Olivgrün', 'Khaki', 'Ocker', 'Senf', 'Korallenrot', 'Tiefrosa', 'Anthrazit',
+  'Pfirsich', 'Apricot', 'Schokolade', 'Weinrot', 'Bordeaux', 'Smaragdgrün', 'Indigo',
+  'Gelbgrün', 'Blaugrün', 'Blauviolett', 'Limette', 'Pflaume', 'Himbeere',
+  'Pastellblau', 'Pastellgrün', 'Pastellgelb', 'Pastellrosa', 'Pastellviolett',
+  'Neongelb', 'Neongrün', 'Neonorange', 'Neonpink',
+])
+
 export function identifyColor(r: number, g: number, b: number): PickedColor {
   const hsl = rgbToHsl(r, g, b)
   const hex = rgbToHex(r, g, b)
@@ -409,11 +421,12 @@ export function identifyColor(r: number, g: number, b: number): PickedColor {
     if (d < bestDist) { bestDist = d; bestMatch = entry }
   }
 
-  // Find closest entry with a different color name to detect borderline colors
+  // Find closest everyday color with a different name to detect borderline cases
   let secondBestDist = Infinity
   let secondBestName: string | undefined
   for (const entry of COLOR_DB) {
     if (entry.nameDe === bestMatch.nameDe) continue
+    if (!EVERYDAY_COLORS.has(entry.nameDe)) continue
     const d = hslDistance(hsl.h, hsl.s, hsl.l, entry.h, entry.s, entry.l)
     if (d < secondBestDist) { secondBestDist = d; secondBestName = entry.nameDe }
   }
