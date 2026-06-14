@@ -58,9 +58,6 @@ function getBestVoice(): SpeechSynthesisVoice | null {
   return [...pool].sort((a, b) => score(b) - score(a))[0]
 }
 
-// Prevent GC of the active utterance while it's queued/playing
-let currentUtterance: SpeechSynthesisUtterance | null = null
-
 // Cached voice — populated at startup so speakColor never needs an async path
 let cachedVoice: SpeechSynthesisVoice | null = null
 
@@ -105,8 +102,6 @@ export function speakColor(color: PickedColor): void {
   utter.rate = rate
   utter.pitch = isIOS() ? 1 : 1.05
   utter.onerror = (e) => console.error('[TTS]', e.error)
-  currentUtterance = utter
-
   // Use cached voice (may be null on first pick before voices load — browser uses default)
   const voice = cachedVoice ?? getBestVoice()
   if (voice) utter.voice = voice
@@ -132,5 +127,4 @@ export function stopSpeaking(): void {
     return
   }
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-  currentUtterance = null
 }
