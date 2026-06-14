@@ -43,6 +43,7 @@
 - **Verlauf** — Alle erkannten Farben mit Zeitstempel
 - **Favoriten** — Farben in benutzerdefinierten Listen organisieren
 - **CSV-Import/Export** — Favoritenlisten sichern und übertragen
+- **Lupe** — Vergrößerte Vorschau beim Finger-Halten für präzises Auswählen
 - **Zoom & Pan** — Mausrad-Zoom und Pinch-to-Zoom auf Touchgeräten
 - **PWA** — Installierbar, offline-fähig
 - **Desktop-App** — Native Apps für Linux, Windows und macOS
