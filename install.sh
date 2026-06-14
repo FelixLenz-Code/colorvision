@@ -106,10 +106,13 @@ success "Quellcode bereit."
 # ─── Node-Abhängigkeiten & Build ─────────────────────────────────────────────
 info "Installiere npm-Abhängigkeiten…"
 cd "$INSTALL_DIR"
-npm ci --omit=dev --silent
+npm ci --silent
 
 info "Baue Web-App…"
 npm run build --silent
+
+info "Bereinige Build-Abhängigkeiten…"
+npm prune --omit=dev --silent
 
 success "Build abgeschlossen."
 
