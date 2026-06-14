@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Heart, Volume2, VolumeX, Copy, Check, Info } from 'lucide-react'
+import { Heart, Volume2, VolumeX, Copy, Check, Info, X } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
 import { speakColor, stopSpeaking } from '../lib/tts'
 
@@ -19,6 +19,7 @@ function getContrastColors(r: number, g: number, b: number) {
   return {
     text: useDark ? '#1a1a2e' : '#ffffff',
     btnBg: useDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)',
+    btnBgActive: useDark ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.40)',
     pillBg: useDark ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.28)',
   }
 }
@@ -28,12 +29,18 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
   const speakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { text: textColor, btnBg, pillBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const [headerH, setHeaderH] = useState(0)
+  const { text: textColor, btnBg, btnBgActive, pillBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
 
-  // Stop speaking when color changes
+  useEffect(() => {
+    if (headerRef.current) setHeaderH(headerRef.current.offsetHeight)
+  })
+
   useEffect(() => {
     setSpeaking(false)
     stopSpeaking()
+    setShowDescription(false)
     return () => {
       if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
     }
@@ -64,9 +71,9 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   ]
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="relative flex flex-col h-full">
       {/* Color header */}
-      <div className="shrink-0 px-5 py-4" style={{ backgroundColor: color.hex }}>
+      <div ref={headerRef} className="shrink-0 px-5 py-4" style={{ backgroundColor: color.hex }}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold leading-none" style={{ color: textColor }}>
@@ -99,8 +106,8 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
             <button
               onClick={() => setShowDescription(v => !v)}
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: btnBg, color: textColor }}
-              title="Farberklärung"
+              style={{ backgroundColor: showDescription ? btnBgActive : btnBg, color: textColor }}
+              title="Farbbeschreibung"
               data-testid="info-btn"
             >
               <Info className="w-4 h-4" />
@@ -109,15 +116,27 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
         </div>
       </div>
 
-      {/* Description */}
-      {showDescription && (
-        <div className="px-5 py-3 bg-muted/60 border-b border-border shrink-0">
-          <p className="text-sm text-muted-foreground leading-relaxed">{color.descriptionDe}</p>
+      {/* Description popup — floats above the details */}
+      {showDescription && color.descriptionDe && (
+        <div
+          className="absolute left-3 right-3 z-10 bg-card border border-border rounded-xl shadow-xl p-4"
+          style={{ top: headerH + 4 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-3">
+            <p className="text-sm text-muted-foreground leading-relaxed flex-1">{color.descriptionDe}</p>
+            <button
+              onClick={() => setShowDescription(false)}
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted shrink-0 mt-0.5"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Details */}
-      <div className="flex-1 p-4 space-y-3">
+      {/* Details — scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         <div className="bg-card rounded-xl p-3 border border-border">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Helligkeit</p>
           <p className="text-lg font-bold text-foreground capitalize">{color.brightnessDe}</p>
