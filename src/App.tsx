@@ -186,18 +186,22 @@ export default function App() {
     setLists(reordered)
   }
 
+  const applyImportedCsv = (csv: string, targetListId: string) => {
+    const imported = importFavoritesFromCsv(csv, lists).map(e => ({ ...e, listId: targetListId }))
+    if (imported.length === 0) return
+    const updated = [...favorites, ...imported]
+    saveFavorites(updated)
+    setFavorites(updated)
+    setTab('favorites')
+  }
+
   const handleImportFavorites = (file: File, targetListId: string) => {
-    file.text().then(csv => {
-      const imported = importFavoritesFromCsv(csv, lists)
-        .map(e => ({ ...e, listId: targetListId }))
-      if (imported.length === 0) return
-      const updated = [...favorites, ...imported]
-      saveFavorites(updated)
-      setFavorites(updated)
-      setTab('favorites')
-    }).catch(err => {
-      console.error('Import fehlgeschlagen:', err)
-    })
+    file.text().then(csv => applyImportedCsv(csv, targetListId))
+      .catch(err => console.error('Import fehlgeschlagen:', err))
+  }
+
+  const handleImportFavoritesCsv = (csv: string, targetListId: string) => {
+    applyImportedCsv(csv, targetListId)
   }
 
   const handleRemoveHistoryEntry = (id: string) => {
@@ -382,6 +386,7 @@ export default function App() {
             onRemoveFavorite={handleRemoveFavorite}
             onReorderLists={handleReorderLists}
             onImport={handleImportFavorites}
+            onImportCsv={handleImportFavoritesCsv}
             onOpenDetail={handleOpenDetailFromFavorites}
           />
         </div>

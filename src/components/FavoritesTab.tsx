@@ -4,6 +4,15 @@ import type { FavoriteEntry, FavoriteList } from '../lib/storage'
 import { exportFavoritesToCsv } from '../lib/storage'
 import { speakColor } from '../lib/tts'
 
+interface ElectronAPI {
+  saveFile: (filename: string, content: string) => Promise<boolean>
+  openFile: () => Promise<string | null>
+}
+
+declare global {
+  interface Window { electronAPI?: ElectronAPI }
+}
+
 interface Props {
   favorites: FavoriteEntry[]
   lists: FavoriteList[]
@@ -13,10 +22,11 @@ interface Props {
   onRemoveFavorite: (id: string) => void
   onReorderLists: (lists: FavoriteList[]) => void
   onImport: (file: File, targetListId: string) => void
+  onImportCsv: (csv: string, targetListId: string) => void
   onOpenDetail: (entry: FavoriteEntry) => void
 }
 
-export default function FavoritesTab({ favorites, lists, onAddList, onRenameList, onDeleteList, onRemoveFavorite, onReorderLists, onImport, onOpenDetail }: Props) {
+export default function FavoritesTab({ favorites, lists, onAddList, onRenameList, onDeleteList, onRemoveFavorite, onReorderLists, onImport, onImportCsv, onOpenDetail }: Props) {
   const [activeListId, setActiveListId] = useState<string>(lists[0]?.id ?? 'default')
   const [creatingList, setCreatingList] = useState(false)
   const [newListName, setNewListName] = useState('')
@@ -39,15 +49,30 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
     setCreatingList(false)
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const csv = exportFavoritesToCsv(favorites, lists)
+    if (window.electronAPI) {
+      await window.electronAPI.saveFile('colorvision-favoriten.csv', csv)
+      return
+    }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = 'colorvision-favoriten.csv'
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleImportClick = async () => {
+    if (window.electronAPI) {
+      const csv = await window.electronAPI.openFile()
+      if (csv) onImportCsv(csv, activeList?.id ?? lists[0]?.id ?? 'default')
+      return
+    }
+    importRef.current?.click()
   }
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +108,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
         </div>
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => importRef.current?.click()}
+            onClick={handleImportClick}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium px-2 py-1.5 rounded-lg hover:bg-muted/60"
             title="Favoriten importieren (.csv)"
           >

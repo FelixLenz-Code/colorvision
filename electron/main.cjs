@@ -1,6 +1,7 @@
-const { app, BrowserWindow, nativeTheme } = require('electron')
+const { app, BrowserWindow, nativeTheme, ipcMain, dialog } = require('electron')
 const path = require('path')
-const { existsSync } = require('fs')
+const fs = require('fs')
+const { existsSync } = fs
 
 const isDev = !existsSync(path.join(__dirname, '../dist/index.html'))
 
@@ -13,6 +14,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
     icon: path.join(__dirname, '../public/icons/icon-512.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
@@ -33,6 +35,25 @@ function createWindow() {
   // Force light theme
   nativeTheme.themeSource = 'light'
 }
+
+ipcMain.handle('save-file', async (_event, filename, content) => {
+  const { filePath } = await dialog.showSaveDialog({
+    defaultPath: filename,
+    filters: [{ name: 'CSV', extensions: ['csv'] }],
+  })
+  if (!filePath) return false
+  fs.writeFileSync(filePath, content, 'utf-8')
+  return true
+})
+
+ipcMain.handle('open-file', async () => {
+  const { filePaths } = await dialog.showOpenDialog({
+    filters: [{ name: 'CSV', extensions: ['csv'] }],
+    properties: ['openFile'],
+  })
+  if (!filePaths[0]) return null
+  return fs.readFileSync(filePaths[0], 'utf-8')
+})
 
 app.whenReady().then(() => {
   createWindow()
