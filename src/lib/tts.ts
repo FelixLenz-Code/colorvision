@@ -33,13 +33,11 @@ function isIOS(): boolean {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
-let cachedVoice: SpeechSynthesisVoice | null = null
-
-function pickBestVoice(): SpeechSynthesisVoice | null {
+function getBestVoice(): SpeechSynthesisVoice | null {
   const all = window.speechSynthesis.getVoices()
-  if (all.length === 0) return null
   const de = all.filter(v => v.lang.startsWith('de'))
   const pool = de.length > 0 ? de : all
+  if (pool.length === 0) return null
 
   const score = (v: SpeechSynthesisVoice): number => {
     const n = v.name.toLowerCase()
@@ -47,35 +45,29 @@ function pickBestVoice(): SpeechSynthesisVoice | null {
     if (n.includes('enhanced')) return 95
     if (n.includes('yannick')) return 90
     if (n.includes('markus')) return 82
-    if (n.includes('anna')) return 80   // macOS German
+    if (n.includes('anna')) return 80
     if (n.includes('lena')) return 78
     if (n.includes('hannah')) return 75
     if (n.includes('helena')) return 72
     if (n.includes('liselotte')) return 68
-    if (n.includes('google')) return 65  // Google cloud voices
-    if (!v.localService) return 60       // any remote/cloud voice
-    if (v.lang.startsWith('de')) return 20  // local German (espeak etc.)
+    if (n.includes('google')) return 65
+    if (!v.localService) return 60
+    if (v.lang.startsWith('de')) return 20
     return 10
   }
   return [...pool].sort((a, b) => score(b) - score(a))[0]
 }
 
+// Prevent GC of the active utterance while it's queued/playing
+let currentUtterance: SpeechSynthesisUtterance | null = null
+
 export function preloadVoices(): void {
   if (!('speechSynthesis' in window)) return
-
-  const tryLoad = () => {
-    const v = pickBestVoice()
-    if (v) cachedVoice = v
-  }
-
-  tryLoad()
-  if (!cachedVoice) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null
-      tryLoad()
-    }
-    setTimeout(tryLoad, 500)
-    setTimeout(tryLoad, 2000)
+  // Trigger voice loading so they're ready sooner
+  window.speechSynthesis.getVoices()
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.onvoiceschanged = null
+    window.speechSynthesis.getVoices() // warm up
   }
 }
 
@@ -84,7 +76,7 @@ export function speakColor(color: PickedColor): void {
   const text = `${color.brightnessDeSpeech} ${name}`
   const rate = isIOS() ? 0.8 : 0.82
 
-  // Electron on Linux: use espeak-ng via IPC (speech-dispatcher unreachable in AppImage)
+  // Electron on Linux: use espeak-ng directly (speech-dispatcher unreachable in AppImage)
   if (window.electronAPI?.speakElectron) {
     window.electronAPI.speakElectron(text, rate)
     return
@@ -95,20 +87,32 @@ export function speakColor(color: PickedColor): void {
   window.speechSynthesis.cancel()
 
   const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'de-DE'
   utter.volume = 1
   utter.rate = rate
   utter.pitch = isIOS() ? 1 : 1.05
+  utter.onerror = (e) => console.error('[TTS]', e.error)
+  currentUtterance = utter
 
-  const voice = cachedVoice ?? pickBestVoice()
-  if (voice) {
-    utter.voice = voice
-    utter.lang = voice.lang  // use the voice's actual lang, not a hardcoded string
+  const doSpeak = () => {
+    const voice = getBestVoice()
+    if (voice) utter.voice = voice
+    window.speechSynthesis.speak(utter)
   }
-  // If no voice found (e.g. Chrome/Linux without speech-dispatcher), omit lang
-  // so the browser uses its default engine instead of failing silently
 
-  utter.onerror = (e) => console.error('[TTS] Fehler:', e.error)
-  window.speechSynthesis.speak(utter)
+  if (window.speechSynthesis.getVoices().length > 0) {
+    // Voices already loaded — speak immediately (stay within user gesture)
+    doSpeak()
+  } else {
+    // Chrome loads voices async from speech-dispatcher — wait for them,
+    // with a 1s fallback so we still speak even if onvoiceschanged never fires
+    const fallback = setTimeout(doSpeak, 1000)
+    window.speechSynthesis.onvoiceschanged = () => {
+      clearTimeout(fallback)
+      window.speechSynthesis.onvoiceschanged = null
+      doSpeak()
+    }
+  }
 }
 
 export function stopSpeaking(): void {
@@ -117,4 +121,5 @@ export function stopSpeaking(): void {
     return
   }
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  currentUtterance = null
 }
