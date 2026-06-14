@@ -23,6 +23,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [listMenuId, setListMenuId] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
   const [dragListId, setDragListId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -145,31 +146,20 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
               ) : list.name}
             </button>
             <button
-              onClick={e => { e.stopPropagation(); setListMenuId(listMenuId === list.id ? null : list.id) }}
+              onClick={e => {
+                e.stopPropagation()
+                if (listMenuId === list.id) {
+                  setListMenuId(null); setMenuPos(null)
+                } else {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  setMenuPos({ top: rect.bottom + 4, left: rect.left - 80 })
+                  setListMenuId(list.id)
+                }
+              }}
               className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full hover:bg-muted-foreground/20 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-muted-foreground"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
             </button>
-            {listMenuId === list.id && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 min-w-[120px] overflow-hidden">
-                <button
-                  onClick={() => { setRenamingId(list.id); setRenameValue(list.name); setListMenuId(null) }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Umbenennen
-                </button>
-                {lists.length > 1 && (
-                  <button
-                    onClick={() => { onDeleteList(list.id); setListMenuId(null); setActiveListId(lists.find(l => l.id !== list.id)?.id ?? 'default') }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left text-red-500"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Löschen
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         ))}
 
@@ -224,6 +214,9 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
             >
               <div className="w-10 h-10 rounded-xl shrink-0 shadow-sm" style={{ backgroundColor: entry.hex }} />
               <div className="flex-1 min-w-0">
+                {entry.customLabel && (
+                  <p className="text-xs font-semibold text-primary mb-0.5 truncate">{entry.customLabel}</p>
+                )}
                 <div className="flex items-baseline gap-2">
                   <span className="font-semibold text-foreground text-sm">{entry.nameDe}</span>
                   <span className="text-xs text-muted-foreground">{entry.nameEn}</span>
@@ -249,9 +242,37 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
         </div>
       )}
 
-      {/* Close list menu on outside click */}
-      {listMenuId && (
-        <div className="fixed inset-0 z-10" onClick={() => setListMenuId(null)} />
+      {/* Dropdown menu rendered at fixed position to escape overflow clipping */}
+      {listMenuId && menuPos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => { setListMenuId(null); setMenuPos(null) }} />
+          <div
+            className="fixed z-50 bg-card border border-border rounded-xl shadow-lg min-w-[130px] overflow-hidden"
+            style={{ top: menuPos.top, left: Math.max(8, menuPos.left) }}
+          >
+            <button
+              onClick={() => { setRenamingId(listMenuId); setRenameValue(lists.find(l => l.id === listMenuId)?.name ?? ''); setListMenuId(null); setMenuPos(null) }}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              Umbenennen
+            </button>
+            {lists.length > 1 && (
+              <button
+                onClick={() => {
+                  onDeleteList(listMenuId)
+                  setActiveListId(lists.find(l => l.id !== listMenuId)?.id ?? 'default')
+                  setListMenuId(null)
+                  setMenuPos(null)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left text-red-500"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Löschen
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

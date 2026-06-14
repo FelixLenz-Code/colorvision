@@ -18,8 +18,16 @@ interface Props {
   onSaveCustomLabel?: (label: string) => void
 }
 
-function getTextColor(l: number): string {
-  return l > 55 ? '#1a1a2e' : '#ffffff'
+function getContrastColors(r: number, g: number, b: number) {
+  const lin = (c: number) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }
+  const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  const useDark = (lum + 0.05) / 0.05 > 1.05 / (lum + 0.05)
+  return {
+    text: useDark ? '#1a1a2e' : '#ffffff',
+    btnBg: useDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)',
+    btnBgActive: useDark ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.40)',
+    inputBg: useDark ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.20)',
+  }
 }
 
 export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, onDelete, onClose, onSaveCustomLabel }: Props) {
@@ -30,7 +38,7 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
   const labelInputRef = useRef<HTMLInputElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const [headerH, setHeaderH] = useState(0)
-  const textColor = getTextColor(color.hsl.l)
+  const { text: textColor, btnBg, btnBgActive, inputBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
 
   useEffect(() => {
     if (headerRef.current) setHeaderH(headerRef.current.offsetHeight)
@@ -65,7 +73,7 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Sheet — no overflow-hidden so the popup can float above content */}
+      {/* Sheet */}
       <div className="relative z-10 w-full max-w-lg rounded-t-2xl shadow-xl flex flex-col" style={{ maxHeight: '85vh' }}>
 
         {/* Description popup — floats above the content */}
@@ -87,14 +95,14 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
           </div>
         )}
 
-        {/* Color header — rounded-t-2xl and overflow-hidden for corner clipping */}
+        {/* Color header */}
         <div ref={headerRef} className="shrink-0 px-5 pt-4 pb-5 rounded-t-2xl overflow-hidden" style={{ backgroundColor: color.hex }}>
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <button
                 onClick={onToggleFavorite}
                 className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-                style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                style={{ backgroundColor: btnBg }}
                 title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
               >
                 <Heart className="w-4 h-4" fill={isFavorite ? '#ff4d6d' : 'none'}
@@ -103,11 +111,8 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
               <button
                 onClick={() => setShowDescription(v => !v)}
                 className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-                style={{
-                  backgroundColor: showDescription ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
-                  color: textColor,
-                }}
-                title="Farbbeschreibung anzeigen"
+                style={{ backgroundColor: showDescription ? btnBgActive : btnBg, color: textColor }}
+                title="Farbbeschreibung"
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -115,7 +120,7 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
             <button
               onClick={onClose}
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: textColor }}
+              style={{ backgroundColor: btnBg, color: textColor }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -135,20 +140,20 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
                     onChange={e => setLabelValue(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveLabel(); if (e.key === 'Escape') setEditingLabel(false) }}
                     placeholder="Eigener Name (z.B. Wandfarbe Küche)"
-                    className="flex-1 bg-white/20 rounded-lg px-3 py-1.5 text-sm outline-none placeholder:opacity-60"
-                    style={{ color: textColor }}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-sm outline-none placeholder:opacity-60"
+                    style={{ backgroundColor: inputBg, color: textColor }}
                   />
                   <button
                     onClick={saveLabel}
                     className="w-7 h-7 flex items-center justify-center rounded-lg"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.3)', color: textColor }}
+                    style={{ backgroundColor: btnBgActive, color: textColor }}
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => { setEditingLabel(false); setLabelValue(color.customLabel ?? '') }}
                     className="w-7 h-7 flex items-center justify-center rounded-lg"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: textColor }}
+                    style={{ backgroundColor: btnBg, color: textColor }}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

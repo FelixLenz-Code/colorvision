@@ -12,8 +12,15 @@ interface Props {
   customLabel?: string
 }
 
-function getTextColor(l: number): string {
-  return l > 55 ? '#1a1a2e' : '#ffffff'
+function getContrastColors(r: number, g: number, b: number) {
+  const lin = (c: number) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }
+  const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  const useDark = (lum + 0.05) / 0.05 > 1.05 / (lum + 0.05)
+  return {
+    text: useDark ? '#1a1a2e' : '#ffffff',
+    btnBg: useDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)',
+    pillBg: useDark ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.28)',
+  }
 }
 
 export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpeak, onToggleAutoSpeak, customLabel }: Props) {
@@ -21,7 +28,7 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
   const speakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const textColor = getTextColor(color.hsl.l)
+  const { text: textColor, btnBg, pillBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
 
   // Stop speaking when color changes
   useEffect(() => {
@@ -70,7 +77,7 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
             </p>
             {customLabel && (
               <p className="text-xs mt-1 font-semibold px-2 py-0.5 rounded-full inline-block"
-                style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: textColor }}>
+                style={{ backgroundColor: pillBg, color: textColor }}>
                 {customLabel}
               </p>
             )}
@@ -79,7 +86,7 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
             <button
               onClick={onToggleFavorite}
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+              style={{ backgroundColor: btnBg }}
               title={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
               data-testid="favorite-btn"
             >
@@ -92,7 +99,7 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
             <button
               onClick={() => setShowDescription(v => !v)}
               className="w-9 h-9 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: textColor }}
+              style={{ backgroundColor: btnBg, color: textColor }}
               title="Farberklärung"
               data-testid="info-btn"
             >
