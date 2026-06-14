@@ -26,6 +26,16 @@ export default function LegalModal({ page, onClose }: Props) {
               <div key={section.heading}>
                 <h3 className="font-semibold text-foreground text-sm mb-1">{section.heading}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+                {section.link && (
+                  <a
+                    href={section.link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary underline underline-offset-2 hover:opacity-80 transition-opacity mt-1 inline-block"
+                  >
+                    {section.link.text}
+                  </a>
+                )}
               </div>
             ))}
           </div>

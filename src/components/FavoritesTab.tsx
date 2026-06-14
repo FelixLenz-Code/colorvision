@@ -12,7 +12,7 @@ interface Props {
   onDeleteList: (id: string) => void
   onRemoveFavorite: (id: string) => void
   onReorderLists: (lists: FavoriteList[]) => void
-  onImport: (file: File) => void
+  onImport: (file: File, targetListId: string) => void
   onOpenDetail: (entry: FavoriteEntry) => void
 }
 
@@ -52,7 +52,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) onImport(file)
+    if (file) onImport(file, activeList?.id ?? lists[0]?.id ?? 'default')
     e.target.value = ''
   }
 

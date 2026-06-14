@@ -9,7 +9,7 @@ import LegalModal from './components/LegalModal'
 import SnapSheet from './components/SnapSheet'
 import ColorDetailSheet, { type ColorDetail } from './components/ColorDetailSheet'
 import type { PickedColor } from './lib/colors'
-import { speakColor } from './lib/tts'
+import { speakColor, preloadVoices } from './lib/tts'
 import {
   type HistoryEntry, type FavoriteEntry, type FavoriteList,
   loadHistory, saveHistory, addToHistory, clearHistory,
@@ -17,6 +17,16 @@ import {
   loadLists, saveLists,
   importFavoritesFromCsv,
 } from './lib/storage'
+
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
 
 type Tab = 'picker' | 'history' | 'favorites'
 type LegalPage = 'impressum' | 'datenschutz' | null
@@ -33,10 +43,12 @@ export default function App() {
   const [lists, setLists] = useState<FavoriteList[]>(() => loadLists())
   const [legalPage, setLegalPage] = useState<LegalPage>(null)
   const [legalMenuOpen, setLegalMenuOpen] = useState(false)
-  const [addToFavListOpen, setAddToFavListOpen] = useState(false)
+  const [pendingFavEntry, setPendingFavEntry] = useState<{ color: PickedColor; sourceFile?: string } | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SnapPos>('peek')
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
+
+  useEffect(() => { preloadVoices() }, [])
 
   const handleImageLoaded = (url: string, fileName?: string) => {
     setImageUrl(url)
@@ -76,9 +88,10 @@ export default function App() {
   const pickedCustomLabel = matchingFavorite?.customLabel
 
   const addFavoriteColor = useCallback((color: PickedColor, listId = lists[0]?.id ?? 'default', sourceFile?: string) => {
+    if (favorites.some(f => f.hex === color.hex && f.nameDe === color.nameDe)) return
     const entry: FavoriteEntry = {
       ...color,
-      id: crypto.randomUUID(),
+      id: uuid(),
       savedAt: Date.now(),
       listId,
       sourceFile: (color as FavoriteEntry).sourceFile ?? sourceFile,
@@ -99,23 +112,40 @@ export default function App() {
     if (isPickedColorFavorite) {
       removeFavoriteByHex(pickedColor.hex, pickedColor.nameDe)
     } else if (lists.length > 1) {
-      setAddToFavListOpen(true)
+      setPendingFavEntry({ color: pickedColor, sourceFile: imageFileName })
     } else {
       addFavoriteColor(pickedColor, undefined, imageFileName)
     }
   }
 
   const handleFavoriteFromHistory = (entry: HistoryEntry) => {
-    const alreadyFav = favorites.some(f => f.hex === entry.hex && f.nameDe === entry.nameDe)
-    if (alreadyFav) removeFavoriteByHex(entry.hex, entry.nameDe)
-    else addFavoriteColor(entry, undefined, entry.sourceFile)
+    if (isFavorite(entry.id)) {
+      removeFavoriteByHex(entry.hex, entry.nameDe)
+    } else if (lists.length > 1) {
+      setPendingFavEntry({ color: entry, sourceFile: entry.sourceFile })
+    } else {
+      addFavoriteColor(entry, undefined, entry.sourceFile)
+    }
   }
 
   const handleSaveAllHistory = () => {
+    const seen = new Set<string>(favorites.map(f => `${f.hex}|${f.nameDe}`))
+    const newEntries: FavoriteEntry[] = []
     for (const entry of history) {
-      const alreadyFav = favorites.some(f => f.hex === entry.hex && f.nameDe === entry.nameDe)
-      if (!alreadyFav) addFavoriteColor(entry, undefined, entry.sourceFile)
+      const key = `${entry.hex}|${entry.nameDe}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      newEntries.push({
+        ...entry,
+        id: uuid(),
+        savedAt: Date.now(),
+        listId: lists[0]?.id ?? 'default',
+      })
     }
+    if (newEntries.length === 0) return
+    const updated = [...favorites, ...newEntries]
+    saveFavorites(updated)
+    setFavorites(updated)
   }
 
   const handleClearHistory = () => {
@@ -124,7 +154,7 @@ export default function App() {
   }
 
   const handleAddList = (name: string) => {
-    const newList: FavoriteList = { id: crypto.randomUUID(), name, order: lists.length }
+    const newList: FavoriteList = { id: uuid(), name, order: lists.length }
     const updated = [...lists, newList]
     saveLists(updated)
     setLists(updated)
@@ -156,12 +186,17 @@ export default function App() {
     setLists(reordered)
   }
 
-  const handleImportFavorites = (file: File) => {
+  const handleImportFavorites = (file: File, targetListId: string) => {
     file.text().then(csv => {
       const imported = importFavoritesFromCsv(csv, lists)
+        .map(e => ({ ...e, listId: targetListId }))
+      if (imported.length === 0) return
       const updated = [...favorites, ...imported]
       saveFavorites(updated)
       setFavorites(updated)
+      setTab('favorites')
+    }).catch(err => {
+      console.error('Import fehlgeschlagen:', err)
     })
   }
 
@@ -353,9 +388,9 @@ export default function App() {
       </main>
 
       {/* Add to list modal */}
-      {addToFavListOpen && pickedColor && (
+      {pendingFavEntry && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAddToFavListOpen(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPendingFavEntry(null)} />
           <div className="relative z-10 w-full sm:max-w-sm bg-card rounded-t-2xl sm:rounded-2xl shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-bold text-base text-foreground">In Liste speichern</h2>
@@ -364,7 +399,10 @@ export default function App() {
               {lists.map(list => (
                 <button
                   key={list.id}
-                  onClick={() => { addFavoriteColor(pickedColor, list.id, imageFileName); setAddToFavListOpen(false) }}
+                  onClick={() => {
+                    addFavoriteColor(pendingFavEntry.color, list.id, pendingFavEntry.sourceFile)
+                    setPendingFavEntry(null)
+                  }}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/60 transition-colors text-left"
                 >
                   <span className="font-medium text-sm text-foreground">{list.name}</span>

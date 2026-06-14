@@ -1,15 +1,16 @@
 export interface LegalSection {
   heading: string
   content: string
+  link?: { text: string; href: string }
 }
 
 export const IMPRESSUM: LegalSection[] = [
   {
     heading: 'Angaben zum Herausgeber',
     content:
-      'ColorVision ist eine kostenfreie Open-Source-Anwendung zur Unterstützung von Menschen mit Farbenfehlsichtigkeit. ' +
-      'Der Quellcode ist unter einer Open-Source-Lizenz frei verfügbar. ' +
-      'Details entnehmen Sie bitte dem GitHub-Repository: github.com/FelixLenz-Code/colorvision',
+      'ColorVision ist eine kostenfreie Anwendung zur Unterstützung von Menschen mit Farbenfehlsichtigkeit. ' +
+      'Der Quellcode ist öffentlich auf GitHub verfügbar:',
+    link: { text: 'github.com/FelixLenz-Code/colorvision', href: 'https://github.com/FelixLenz-Code/colorvision' },
   },
   {
     heading: 'Haftungsausschluss',
@@ -20,11 +21,12 @@ export const IMPRESSUM: LegalSection[] = [
       'Eine Haftung für Schäden, die aus der Nutzung dieser Farbinformationen entstehen, wird ausgeschlossen.',
   },
   {
-    heading: 'Urheberrecht',
+    heading: 'Urheberrecht & Lizenz',
     content:
-      'Der Quellcode dieser Anwendung ist unter einer Open-Source-Lizenz veröffentlicht. ' +
-      'Die verwendete Farb-Datenbank basiert auf dem HSL-Farbraum und wurde vom Entwickler erstellt. ' +
-      'Die Nutzung der Anwendung ist kostenlos und ohne Registrierung möglich.',
+      'ColorVision ist lizenziert unter der Creative Commons Lizenz CC BY-NC 4.0 ' +
+      '(Namensnennung – Nicht kommerziell). ' +
+      'Nutzung ist erlaubt, solange sie nicht kommerziellen Zwecken dient und der Urheber genannt wird.',
+    link: { text: 'creativecommons.org/licenses/by-nc/4.0', href: 'https://creativecommons.org/licenses/by-nc/4.0/deed.de' },
   },
   {
     heading: 'Technische Hinweise',

@@ -22,9 +22,15 @@ function isIOS(): boolean {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
-function getBestGermanVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('de'))
-  if (voices.length === 0) return null
+let cachedVoice: SpeechSynthesisVoice | null | undefined = undefined
+// Modul-Variable verhindert Garbage Collection der Utterance vor dem Sprechen
+let activeUtterance: SpeechSynthesisUtterance | null = null
+
+function pickBestVoice(): SpeechSynthesisVoice | null {
+  const all = window.speechSynthesis.getVoices()
+  const de = all.filter(v => v.lang.startsWith('de'))
+  const pool = de.length > 0 ? de : all // fall back to any voice if no German found
+  if (pool.length === 0) return null
 
   const score = (v: SpeechSynthesisVoice): number => {
     const n = v.name.toLowerCase()
@@ -39,43 +45,66 @@ function getBestGermanVoice(): SpeechSynthesisVoice | null {
     if (v.localService) return 15
     return 60
   }
+  return [...pool].sort((a, b) => score(b) - score(a))[0]
+}
 
-  return [...voices].sort((a, b) => score(b) - score(a))[0]
+/** Voices im Hintergrund voraden — in App.tsx beim Start aufrufen. */
+export function preloadVoices(): void {
+  if (!('speechSynthesis' in window)) return
+  const tryLoad = () => {
+    const v = pickBestVoice()
+    if (v !== null) { cachedVoice = v; return }
+    cachedVoice = null
+  }
+  tryLoad()
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.onvoiceschanged = null
+    tryLoad()
+  }
+  // Nochmal nach 1s falls onvoiceschanged nie feuert
+  setTimeout(tryLoad, 1000)
+}
+
+function getBestGermanVoice(): SpeechSynthesisVoice | null {
+  if (cachedVoice !== undefined) return cachedVoice
+  return pickBestVoice()
 }
 
 export function speakColor(color: PickedColor): void {
   if (!('speechSynthesis' in window)) return
+
+  if (window.speechSynthesis.paused) window.speechSynthesis.resume()
   window.speechSynthesis.cancel()
 
   const name = PRONUNCIATION_FIXES[color.nameDe] ?? color.nameDe
   const text = `${color.brightnessDeSpeech} ${name}`
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = 'de-DE'
+
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'de-DE'
+  utter.volume = 1
 
   if (isIOS()) {
-    utterance.rate = 0.8
-    utterance.pitch = 1
+    utter.rate = 0.8
+    utter.pitch = 1
   } else {
-    utterance.rate = 0.88
-    utterance.pitch = 1.05
+    utter.rate = 0.88
+    utter.pitch = 1.05
   }
 
-  const speak = () => {
-    const voice = getBestGermanVoice()
-    if (voice) utterance.voice = voice
-    window.speechSynthesis.speak(utterance)
-  }
+  const voice = getBestGermanVoice()
+  if (voice) utter.voice = voice
 
-  if (window.speechSynthesis.getVoices().length > 0) {
-    speak()
-  } else {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null
-      speak()
-    }
-  }
+  utter.onerror = (e) => console.error('[TTS] Fehler:', e.error)
+
+  activeUtterance = utter
+
+  // Chrome/Linux: nach cancel() kurz warten, sonst wird speak() ignoriert
+  setTimeout(() => {
+    if (activeUtterance === utter) window.speechSynthesis.speak(utter)
+  }, 50)
 }
 
 export function stopSpeaking(): void {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  activeUtterance = null
 }

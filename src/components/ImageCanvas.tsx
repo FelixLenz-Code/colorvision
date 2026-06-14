@@ -25,6 +25,7 @@ export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, picke
   const isPanning = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
   const pinchDist = useRef(0)
+  const lastPickMs = useRef(0)
 
   // Load image onto canvas
   useEffect(() => {
@@ -77,6 +78,9 @@ export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, picke
 
 
   const handleClick = useCallback((e: React.MouseEvent) => {
+    const now = Date.now()
+    if (now - lastPickMs.current < 400) return // block ghost click after touch
+    lastPickMs.current = now
     const canvas = canvasRef.current
     if (!canvas) return
     const coords = getCanvasCoords(e.clientX, e.clientY)
@@ -119,6 +123,10 @@ export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, picke
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.changedTouches.length === 1 && e.touches.length === 0) {
+      e.preventDefault() // verhindert den synthetischen click-Event danach
+      const now = Date.now()
+      if (now - lastPickMs.current < 400) return
+      lastPickMs.current = now
       const touch = e.changedTouches[0]
       const canvas = canvasRef.current
       if (!canvas) return
