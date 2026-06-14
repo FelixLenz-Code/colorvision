@@ -86,15 +86,15 @@ info "System: $(lsb_release -d 2>/dev/null | cut -f2 || uname -sr)"
 # ════════════════════════════════════════════════════════════════════════════════
 if [[ "$IS_UPDATE" == true ]]; then
 
-  CURRENT_VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "unbekannt")
+  CURRENT_VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "unbekannt")
   info "Installierte Version: ${CURRENT_VERSION}"
 
   info "Lade aktuelle Version von GitHub…"
-  git -C "$INSTALL_DIR" fetch --quiet origin main
+  git -C "$INSTALL_DIR" fetch --quiet --tags origin main
   git -C "$INSTALL_DIR" reset --hard origin/main --quiet
   success "Quellcode aktualisiert."
 
-  NEW_VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "unbekannt")
+  NEW_VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "unbekannt")
 
   info "Installiere npm-Abhängigkeiten…"
   cd "$INSTALL_DIR"
@@ -271,7 +271,7 @@ if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: activ
 fi
 
 # ─── Zusammenfassung ─────────────────────────────────────────────────────────
-VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "")
+VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "")
 
 echo ""
 echo -e "${BOLD}${GREEN}✓ ColorVision erfolgreich installiert!${NC}"
