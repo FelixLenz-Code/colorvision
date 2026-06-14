@@ -29,6 +29,8 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
   const speakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoSpeakRef = useRef(autoSpeak)
+  useEffect(() => { autoSpeakRef.current = autoSpeak }, [autoSpeak])
   const headerRef = useRef<HTMLDivElement>(null)
   const [headerH, setHeaderH] = useState(0)
   const { text: textColor, btnBg, btnBgActive, pillBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
@@ -38,9 +40,16 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
   })
 
   useEffect(() => {
+    if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
     setSpeaking(false)
-    stopSpeaking()
     setShowDescription(false)
+    if (autoSpeakRef.current) {
+      speakColor(color)
+      setSpeaking(true)
+      speakTimeoutRef.current = setTimeout(() => setSpeaking(false), 5000)
+    } else {
+      stopSpeaking()
+    }
     return () => {
       if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
     }

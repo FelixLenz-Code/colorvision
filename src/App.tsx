@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
@@ -10,7 +10,7 @@ import SnapSheet from './components/SnapSheet'
 import SideSheet from './components/SideSheet'
 import ColorDetailSheet, { type ColorDetail } from './components/ColorDetailSheet'
 import type { PickedColor } from './lib/colors'
-import { speakColor, preloadVoices } from './lib/tts'
+import { preloadVoices } from './lib/tts'
 import {
   type HistoryEntry, type FavoriteEntry, type FavoriteList,
   loadHistory, saveHistory, addToHistory, clearHistory,
@@ -39,7 +39,6 @@ export default function App() {
   const [pickedColor, setPickedColor] = useState<PickedColor | null>(null)
   const [pickedPoint, setPickedPoint] = useState<{ x: number; y: number } | null>(null)
   const [autoSpeak, setAutoSpeak] = useState(false)
-  const autoSpeakRef = useRef(false)
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory())
   const [favorites, setFavorites] = useState<FavoriteEntry[]>(() => loadFavorites())
   const [lists, setLists] = useState<FavoriteList[]>(() => loadLists())
@@ -63,7 +62,6 @@ export default function App() {
   }, [dark])
 
   useEffect(() => { preloadVoices() }, [])
-  useEffect(() => { autoSpeakRef.current = autoSpeak }, [autoSpeak])
   useEffect(() => {
     const handler = () => setTtsWarning(true)
     window.addEventListener('tts-silent-fail', handler)
@@ -84,7 +82,6 @@ export default function App() {
     addToHistory(color, imageFileName)
     setHistory(loadHistory())
     setSheetSnap('mid')
-    if (autoSpeakRef.current) speakColor(color)
   }, [imageFileName])
 
   const handleNewImage = () => {

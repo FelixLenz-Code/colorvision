@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Heart, Volume2, Copy, Check, Info, X, Trash2, Edit2, AlertTriangle } from 'lucide-react'
+import { Heart, Volume2, VolumeX, Copy, Check, Info, X, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
-import { speakColor } from '../lib/tts'
+import { speakColor, stopSpeaking } from '../lib/tts'
 
 export interface ColorDetail extends PickedColor {
   timestamp?: number
@@ -31,13 +31,34 @@ function getContrastColors(r: number, g: number, b: number) {
 }
 
 export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, onDelete, onClose, onSaveCustomLabel }: Props) {
+  const [speaking, setSpeaking] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [showDescription, setShowDescription] = useState(false)
   const [editingLabel, setEditingLabel] = useState(false)
   const [labelValue, setLabelValue] = useState(color.customLabel ?? '')
   const labelInputRef = useRef<HTMLInputElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
+  const speakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [headerH, setHeaderH] = useState(0)
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking()
+      if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
+    }
+  }, [])
+
+  const handleSpeak = () => {
+    if (speaking) {
+      stopSpeaking()
+      setSpeaking(false)
+      if (speakTimeoutRef.current) clearTimeout(speakTimeoutRef.current)
+    } else {
+      setSpeaking(true)
+      speakColor(color)
+      speakTimeoutRef.current = setTimeout(() => setSpeaking(false), 5000)
+    }
+  }
   const { text: textColor, btnBg, btnBgActive, inputBg } = getContrastColors(color.rgb.r, color.rgb.g, color.rgb.b)
 
   useEffect(() => {
@@ -231,11 +252,15 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
         {/* Footer */}
         <div className="flex gap-2 p-4 bg-card border-t border-border shrink-0">
           <button
-            onClick={() => speakColor(color)}
-            className="flex-1 py-3 rounded-xl font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-all flex items-center justify-center gap-2"
+            onClick={handleSpeak}
+            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+              speaking
+                ? 'bg-background border-2 border-primary text-primary'
+                : 'bg-primary text-primary-foreground hover:opacity-90'
+            }`}
           >
-            <Volume2 className="w-4 h-4" />
-            Vorlesen
+            {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {speaking ? 'Stopp' : 'Vorlesen'}
           </button>
           {onDelete && (
             <button
