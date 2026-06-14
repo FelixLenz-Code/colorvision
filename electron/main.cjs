@@ -36,6 +36,25 @@ function createWindow() {
   nativeTheme.themeSource = 'light'
 }
 
+// Linux TTS via espeak-ng (speech-dispatcher is unreachable inside an AppImage)
+if (process.platform === 'linux') {
+  const { execFile } = require('child_process')
+  let speakProc = null
+
+  ipcMain.handle('speak-text', (_event, text, rate) => {
+    if (speakProc) { speakProc.kill(); speakProc = null }
+    const wpm = String(Math.max(80, Math.round(rate * 160)))
+    speakProc = execFile('espeak-ng', ['-v', 'de', '-s', wpm, '--', text], (err) => {
+      if (err && err.signal !== 'SIGTERM') console.error('[espeak-ng]', err.message)
+      speakProc = null
+    })
+  })
+
+  ipcMain.handle('stop-speaking', () => {
+    if (speakProc) { speakProc.kill(); speakProc = null }
+  })
+}
+
 ipcMain.handle('save-file', async (event, filename, content) => {
   const win = BrowserWindow.fromWebContents(event.sender)
   const { filePath } = await dialog.showSaveDialog(win, {

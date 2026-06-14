@@ -4,14 +4,6 @@ import type { FavoriteEntry, FavoriteList } from '../lib/storage'
 import { exportFavoritesToCsv } from '../lib/storage'
 import { speakColor } from '../lib/tts'
 
-interface ElectronAPI {
-  saveFile: (filename: string, content: string) => Promise<boolean>
-  openFile: () => Promise<string | null>
-}
-
-declare global {
-  interface Window { electronAPI?: ElectronAPI }
-}
 
 interface Props {
   favorites: FavoriteEntry[]

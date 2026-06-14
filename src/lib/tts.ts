@@ -1,5 +1,16 @@
 import type { PickedColor } from './colors'
 
+declare global {
+  interface Window {
+    electronAPI?: {
+      saveFile?: (filename: string, content: string) => Promise<boolean>
+      openFile?: () => Promise<string | null>
+      speakElectron?: (text: string, rate: number) => void
+      stopSpeakingElectron?: () => void
+    }
+  }
+}
+
 const PRONUNCIATION_FIXES: Record<string, string> = {
   Cyan: 'Zyan',
   Khaki: 'Kaki',
@@ -23,8 +34,6 @@ function isIOS(): boolean {
 }
 
 let cachedVoice: SpeechSynthesisVoice | null = null
-// Module-level reference prevents GC before utterance finishes speaking
-let activeUtterance: SpeechSynthesisUtterance | null = null
 
 function pickBestVoice(): SpeechSynthesisVoice | null {
   const all = window.speechSynthesis.getVoices()
@@ -53,55 +62,52 @@ export function preloadVoices(): void {
 
   const tryLoad = () => {
     const v = pickBestVoice()
-    // Only update cache if we found something — never overwrite a good voice with null
     if (v) cachedVoice = v
   }
 
   tryLoad()
-
   if (!cachedVoice) {
     window.speechSynthesis.onvoiceschanged = () => {
       window.speechSynthesis.onvoiceschanged = null
       tryLoad()
     }
-    // Fallback retries for browsers that fire onvoiceschanged late or not at all
     setTimeout(tryLoad, 500)
     setTimeout(tryLoad, 2000)
   }
 }
 
 export function speakColor(color: PickedColor): void {
-  if (!('speechSynthesis' in window)) return
-
-  // Cancel any ongoing or queued speech
-  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume()
-    window.speechSynthesis.cancel()
-  }
-
   const name = PRONUNCIATION_FIXES[color.nameDe] ?? color.nameDe
   const text = `${color.brightnessDeSpeech} ${name}`
+  const rate = isIOS() ? 0.8 : 0.88
+
+  // Electron on Linux: use espeak-ng via IPC (speech-dispatcher unreachable in AppImage)
+  if (window.electronAPI?.speakElectron) {
+    window.electronAPI.speakElectron(text, rate)
+    return
+  }
+
+  if (!('speechSynthesis' in window)) return
+
+  window.speechSynthesis.cancel()
 
   const utter = new SpeechSynthesisUtterance(text)
   utter.lang = 'de-DE'
   utter.volume = 1
-  utter.rate = isIOS() ? 0.8 : 0.88
+  utter.rate = rate
   utter.pitch = isIOS() ? 1 : 1.05
 
-  // Always try fresh voice lookup as fallback if cache is empty
   const voice = cachedVoice ?? pickBestVoice()
   if (voice) utter.voice = voice
 
   utter.onerror = (e) => console.error('[TTS] Fehler:', e.error)
-
-  activeUtterance = utter
-
-  // speak() MUST be called synchronously within the user-gesture stack.
-  // A setTimeout here (even 50ms) breaks Chrome Desktop's autoplay policy.
   window.speechSynthesis.speak(utter)
 }
 
 export function stopSpeaking(): void {
+  if (window.electronAPI?.stopSpeakingElectron) {
+    window.electronAPI.stopSpeakingElectron()
+    return
+  }
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-  activeUtterance = null
 }
