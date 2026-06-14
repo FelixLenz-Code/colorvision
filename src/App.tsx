@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Eye, Palette, Clock, Heart, Info } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
@@ -38,6 +38,7 @@ export default function App() {
   const [pickedColor, setPickedColor] = useState<PickedColor | null>(null)
   const [pickedPoint, setPickedPoint] = useState<{ x: number; y: number } | null>(null)
   const [autoSpeak, setAutoSpeak] = useState(false)
+  const autoSpeakRef = useRef(false)
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory())
   const [favorites, setFavorites] = useState<FavoriteEntry[]>(() => loadFavorites())
   const [lists, setLists] = useState<FavoriteList[]>(() => loadLists())
@@ -49,6 +50,7 @@ export default function App() {
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
 
   useEffect(() => { preloadVoices() }, [])
+  useEffect(() => { autoSpeakRef.current = autoSpeak }, [autoSpeak])
 
   const handleImageLoaded = (url: string, fileName?: string) => {
     setImageUrl(url)
@@ -64,8 +66,8 @@ export default function App() {
     addToHistory(color, imageFileName)
     setHistory(loadHistory())
     setSheetSnap('mid')
-    if (autoSpeak) speakColor(color)
-  }, [autoSpeak, imageFileName])
+    if (autoSpeakRef.current) speakColor(color)
+  }, [imageFileName])
 
   const handleNewImage = () => {
     setImageUrl(null)
