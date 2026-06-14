@@ -24,7 +24,7 @@ PORT=8080
 DOMAIN=""
 INSTALL_DIR="/opt/colorvision"
 NGINX_CONF="/etc/nginx/sites-available/colorvision"
-NODE_REQUIRED="18"
+NODE_REQUIRED="22"
 REPO_URL="https://github.com/FelixLenz-Code/colorvision"
 APP_USER="www-data"
 
