@@ -47,12 +47,15 @@ function pickBestVoice(): SpeechSynthesisVoice | null {
     if (n.includes('enhanced')) return 95
     if (n.includes('yannick')) return 90
     if (n.includes('markus')) return 82
+    if (n.includes('anna')) return 80   // macOS German
     if (n.includes('lena')) return 78
     if (n.includes('hannah')) return 75
     if (n.includes('helena')) return 72
     if (n.includes('liselotte')) return 68
-    if (!v.localService) return 60
-    return 15
+    if (n.includes('google')) return 65  // Google cloud voices
+    if (!v.localService) return 60       // any remote/cloud voice
+    if (v.lang.startsWith('de')) return 20  // local German (espeak etc.)
+    return 10
   }
   return [...pool].sort((a, b) => score(b) - score(a))[0]
 }
@@ -79,7 +82,7 @@ export function preloadVoices(): void {
 export function speakColor(color: PickedColor): void {
   const name = PRONUNCIATION_FIXES[color.nameDe] ?? color.nameDe
   const text = `${color.brightnessDeSpeech} ${name}`
-  const rate = isIOS() ? 0.8 : 0.88
+  const rate = isIOS() ? 0.8 : 0.82
 
   // Electron on Linux: use espeak-ng via IPC (speech-dispatcher unreachable in AppImage)
   if (window.electronAPI?.speakElectron) {
@@ -92,13 +95,17 @@ export function speakColor(color: PickedColor): void {
   window.speechSynthesis.cancel()
 
   const utter = new SpeechSynthesisUtterance(text)
-  utter.lang = 'de-DE'
   utter.volume = 1
   utter.rate = rate
   utter.pitch = isIOS() ? 1 : 1.05
 
   const voice = cachedVoice ?? pickBestVoice()
-  if (voice) utter.voice = voice
+  if (voice) {
+    utter.voice = voice
+    utter.lang = voice.lang  // use the voice's actual lang, not a hardcoded string
+  }
+  // If no voice found (e.g. Chrome/Linux without speech-dispatcher), omit lang
+  // so the browser uses its default engine instead of failing silently
 
   utter.onerror = (e) => console.error('[TTS] Fehler:', e.error)
   window.speechSynthesis.speak(utter)
