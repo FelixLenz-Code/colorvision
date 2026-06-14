@@ -26,7 +26,7 @@ INSTALL_DIR="/opt/colorvision"
 NGINX_CONF="/etc/nginx/sites-available/colorvision"
 NODE_REQUIRED="22"
 REPO_URL="https://github.com/FelixLenz-Code/colorvision"
-APP_USER="www-data"
+FORCE=false
 
 # ─── Argumente parsen ─────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -34,8 +34,11 @@ while [[ $# -gt 0 ]]; do
     --port)    PORT="$2";   shift 2 ;;
     --domain)  DOMAIN="$2"; shift 2 ;;
     --dir)     INSTALL_DIR="$2"; shift 2 ;;
+    --force)   FORCE=true;  shift ;;
     --help|-h)
-      echo "Verwendung: $0 [--port PORT] [--domain DOMAIN] [--dir INSTALLDIR]"
+      echo "Verwendung: $0 [--port PORT] [--domain DOMAIN] [--dir INSTALLDIR] [--force]"
+      echo ""
+      echo "  --force   Vollständige Neuinstallation erzwingen (auch wenn bereits installiert)"
       exit 0 ;;
     *)
       warn "Unbekanntes Argument: $1"; shift ;;
@@ -47,13 +50,6 @@ done
 [[ -z "$DOMAIN" || "$DOMAIN" =~ ^[a-zA-Z0-9._-]+$ ]] || die "Ungültige Domain: $DOMAIN"
 [[ "$INSTALL_DIR" =~ ^/ ]] || die "INSTALL_DIR muss ein absoluter Pfad sein"
 
-# ─── Banner ───────────────────────────────────────────────────────────────────
-echo -e "${BOLD}"
-echo "╔══════════════════════════════════════╗"
-echo "║  ColorVision – Server-Installation  ║"
-echo "╚══════════════════════════════════════╝"
-echo -e "${NC}"
-
 # ─── Root-Prüfung ─────────────────────────────────────────────────────────────
 if [[ $EUID -ne 0 ]]; then
   die "Bitte als root oder mit sudo ausführen."
@@ -64,7 +60,72 @@ if ! command -v apt-get &>/dev/null; then
   die "Dieses Skript unterstützt nur Debian/Ubuntu-basierte Systeme."
 fi
 
-info "Starte Installation auf $(lsb_release -d 2>/dev/null | cut -f2 || uname -sr)…"
+# ─── Installationsart erkennen ───────────────────────────────────────────────
+IS_UPDATE=false
+if [[ "$FORCE" == false && -d "$INSTALL_DIR/.git" && -f "$NGINX_CONF" ]]; then
+  IS_UPDATE=true
+fi
+
+# ─── Banner ───────────────────────────────────────────────────────────────────
+echo -e "${BOLD}"
+if [[ "$IS_UPDATE" == true ]]; then
+  echo "╔══════════════════════════════════════╗"
+  echo "║    ColorVision – Server-Update      ║"
+  echo "╚══════════════════════════════════════╝"
+else
+  echo "╔══════════════════════════════════════╗"
+  echo "║  ColorVision – Server-Installation  ║"
+  echo "╚══════════════════════════════════════╝"
+fi
+echo -e "${NC}"
+
+info "System: $(lsb_release -d 2>/dev/null | cut -f2 || uname -sr)"
+
+# ════════════════════════════════════════════════════════════════════════════════
+# UPDATE-PFAD: Nur Code aktualisieren, Nginx-Konfig bleibt unverändert
+# ════════════════════════════════════════════════════════════════════════════════
+if [[ "$IS_UPDATE" == true ]]; then
+
+  CURRENT_VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "unbekannt")
+  info "Installierte Version: ${CURRENT_VERSION}"
+
+  info "Lade aktuelle Version von GitHub…"
+  git -C "$INSTALL_DIR" fetch --quiet origin main
+  git -C "$INSTALL_DIR" reset --hard origin/main --quiet
+  success "Quellcode aktualisiert."
+
+  NEW_VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "unbekannt")
+
+  info "Installiere npm-Abhängigkeiten…"
+  cd "$INSTALL_DIR"
+  npm install --legacy-peer-deps --silent
+
+  info "Baue Web-App…"
+  npm run build --silent
+
+  info "Bereinige Build-Abhängigkeiten…"
+  npm prune --omit=dev --silent
+
+  success "Build abgeschlossen."
+
+  info "Lade Nginx neu…"
+  nginx -t -q 2>/dev/null || die "Nginx-Konfiguration fehlerhaft: $NGINX_CONF"
+  systemctl reload nginx
+  success "Nginx neu geladen."
+
+  echo ""
+  echo -e "${BOLD}${GREEN}✓ ColorVision erfolgreich aktualisiert!${NC}"
+  echo ""
+  echo -e "  ${BOLD}Version:${NC}      ${CURRENT_VERSION} → ${NEW_VERSION}"
+  echo -e "  ${BOLD}URL:${NC}          http://$(hostname -I | awk '{print $1}'):${PORT}"
+  echo -e "  ${BOLD}Installiert in:${NC} $INSTALL_DIR"
+  echo ""
+  exit 0
+fi
+
+# ════════════════════════════════════════════════════════════════════════════════
+# INSTALLATIONS-PFAD: Vollständige Erstinstallation
+# ════════════════════════════════════════════════════════════════════════════════
 
 # ─── Abhängigkeiten installieren ─────────────────────────────────────────────
 info "Aktualisiere Paketliste…"
@@ -96,22 +157,15 @@ fi
 
 success "Abhängigkeiten installiert."
 
-# ─── App herunterladen / aktualisieren ────────────────────────────────────────
-if [[ -d "$INSTALL_DIR/.git" ]]; then
-  info "Aktualisiere bestehende Installation in $INSTALL_DIR…"
-  git -C "$INSTALL_DIR" fetch --quiet origin main
-  git -C "$INSTALL_DIR" reset --hard origin/main --quiet
-else
-  info "Lade ColorVision herunter nach $INSTALL_DIR…"
-  git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" --quiet
-fi
-
+# ─── App herunterladen ────────────────────────────────────────────────────────
+info "Lade ColorVision herunter nach $INSTALL_DIR…"
+git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" --quiet
 success "Quellcode bereit."
 
 # ─── Node-Abhängigkeiten & Build ─────────────────────────────────────────────
 info "Installiere npm-Abhängigkeiten…"
 cd "$INSTALL_DIR"
-npm ci --silent
+npm install --legacy-peer-deps --silent
 
 info "Baue Web-App…"
 npm run build --silent
@@ -217,9 +271,12 @@ if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: activ
 fi
 
 # ─── Zusammenfassung ─────────────────────────────────────────────────────────
+VERSION=$(node -e "process.stdout.write(require('$INSTALL_DIR/package.json').version)" 2>/dev/null || echo "")
+
 echo ""
 echo -e "${BOLD}${GREEN}✓ ColorVision erfolgreich installiert!${NC}"
 echo ""
+[[ -n "$VERSION" ]] && echo -e "  ${BOLD}Version:${NC}      ${VERSION}"
 echo -e "  ${BOLD}URL:${NC}          http://$(hostname -I | awk '{print $1}'):${PORT}"
 if [[ -n "$DOMAIN" ]]; then
   echo -e "  ${BOLD}Domain:${NC}       http://${DOMAIN}:${PORT}"
@@ -229,6 +286,7 @@ echo -e "  ${BOLD}Nginx-Konfig:${NC}  $NGINX_CONF"
 echo ""
 echo -e "  ${BOLD}Befehle:${NC}"
 echo -e "    Aktualisieren:  sudo bash $INSTALL_DIR/install.sh"
+echo -e "    Neuinstallation: sudo bash $INSTALL_DIR/install.sh --force"
 echo -e "    Nginx-Log:      sudo journalctl -u nginx -f"
 echo -e "    Nginx-Restart:  sudo systemctl restart nginx"
 echo ""
