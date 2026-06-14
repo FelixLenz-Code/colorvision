@@ -11,7 +11,7 @@
 
 **Desktop (1080p)**
 
-![Desktop](screenshots/landscape-1080p.png)
+![Desktop](screenshots/desktop.png)
 
 **Mobil**
 
