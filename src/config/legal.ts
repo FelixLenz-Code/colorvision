@@ -81,6 +81,17 @@ export const DATENSCHUTZ: LegalSection[] = [
       'Es werden keine Nutzungsprofile erstellt.',
   },
   {
+    heading: 'Hinweis zur KI-Unterstützung',
+    content:
+      'Diese Software wurde vollständig mithilfe von Claude (einem KI-Assistenten von Anthropic) entwickelt. ' +
+      'Der Autor hat die Anforderungen definiert, Entscheidungen getroffen und das Ergebnis geprüft – ' +
+      'der Code selbst wurde durch den Dialog mit der KI generiert. ' +
+      'Die Software wird so bereitgestellt, wie sie ist (as-is), ohne jegliche Garantie auf Korrektheit, ' +
+      'Vollständigkeit oder Eignung für einen bestimmten Zweck. Der Autor übernimmt keinerlei Haftung für ' +
+      'Schäden, Datenverluste oder sonstige Probleme, die durch die Verwendung dieser Software entstehen. ' +
+      'Die Nutzung erfolgt auf eigene Verantwortung.',
+  },
+  {
     heading: 'Ihre Rechte',
     content:
       'Da keine personenbezogenen Daten erhoben oder verarbeitet werden, entfallen Rechte wie Auskunft, Berichtigung ' +

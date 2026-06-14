@@ -78,9 +78,15 @@ npm run electron:build # Web + Desktop-Binaries
 - **React 18** + TypeScript + Vite
 - **Tailwind CSS** für das Styling
 - **Lucide React** für Icons
-- **Electron 28** für Desktop-Apps
+- **Electron 42** für Desktop-Apps
 - **vite-plugin-pwa** für PWA/Service-Worker
 - **Web Speech API** für Text-to-Speech
+
+## Hinweis zur KI-Unterstützung
+
+Diese Software wurde vollständig mithilfe von [Claude](https://claude.ai) (einem KI-Assistenten von Anthropic) entwickelt. Der Autor hat die Anforderungen definiert, Entscheidungen getroffen und das Ergebnis geprüft — der Code selbst wurde durch den Dialog mit der KI generiert.
+
+**Haftungsausschluss:** Die Software wird so bereitgestellt, wie sie ist (as-is), ohne jegliche Garantie auf Korrektheit, Vollständigkeit oder Eignung für einen bestimmten Zweck. Der Autor übernimmt keinerlei Haftung für Schäden, Datenverluste oder sonstige Probleme, die durch die Verwendung dieser Software entstehen. Die Nutzung erfolgt auf eigene Verantwortung.
 
 ## Lizenz
 
