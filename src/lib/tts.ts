@@ -61,13 +61,26 @@ function getBestVoice(): SpeechSynthesisVoice | null {
 // Prevent GC of the active utterance while it's queued/playing
 let currentUtterance: SpeechSynthesisUtterance | null = null
 
+// Cached voice — populated at startup so speakColor never needs an async path
+let cachedVoice: SpeechSynthesisVoice | null = null
+
+// Only warn once per session
+let silenceWarned = false
+
+function isLinuxChrome(): boolean {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false
+  if (window.electronAPI) return false
+  const ua = navigator.userAgent
+  return /Linux/.test(ua) && /Chrome\//.test(ua) && !/Android/.test(ua)
+}
+
 export function preloadVoices(): void {
   if (!('speechSynthesis' in window)) return
-  // Trigger voice loading so they're ready sooner
-  window.speechSynthesis.getVoices()
+  const cacheVoice = () => { cachedVoice = getBestVoice() }
+  cacheVoice()
   window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.onvoiceschanged = null
-    window.speechSynthesis.getVoices() // warm up
+    cacheVoice()
+    // Keep listener alive — Chrome may fire this multiple times
   }
 }
 
@@ -94,25 +107,23 @@ export function speakColor(color: PickedColor): void {
   utter.onerror = (e) => console.error('[TTS]', e.error)
   currentUtterance = utter
 
-  const doSpeak = () => {
-    const voice = getBestVoice()
-    if (voice) utter.voice = voice
-    window.speechSynthesis.speak(utter)
+  // Use cached voice (may be null on first pick before voices load — browser uses default)
+  const voice = cachedVoice ?? getBestVoice()
+  if (voice) utter.voice = voice
+
+  // Chrome bug: speechSynthesis can get stuck in paused state after ~15s idle
+  if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+
+  // Detect silent failure on Chrome/Linux (speech-dispatcher often produces no audio)
+  if (isLinuxChrome() && !silenceWarned) {
+    const silenceTimer = setTimeout(() => {
+      silenceWarned = true
+      window.dispatchEvent(new CustomEvent('tts-silent-fail'))
+    }, 600)
+    utter.onstart = () => clearTimeout(silenceTimer)
   }
 
-  if (window.speechSynthesis.getVoices().length > 0) {
-    // Voices already loaded — speak immediately (stay within user gesture)
-    doSpeak()
-  } else {
-    // Chrome loads voices async from speech-dispatcher — wait for them,
-    // with a 1s fallback so we still speak even if onvoiceschanged never fires
-    const fallback = setTimeout(doSpeak, 1000)
-    window.speechSynthesis.onvoiceschanged = () => {
-      clearTimeout(fallback)
-      window.speechSynthesis.onvoiceschanged = null
-      doSpeak()
-    }
-  }
+  window.speechSynthesis.speak(utter)
 }
 
 export function stopSpeaking(): void {

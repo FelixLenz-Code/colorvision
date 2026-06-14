@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Eye, Palette, Clock, Heart, Info } from 'lucide-react'
+import { Eye, Palette, Clock, Heart, Info, Volume2, X } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
 import ColorCard from './components/ColorCard'
@@ -7,6 +7,7 @@ import HistoryTab from './components/HistoryTab'
 import FavoritesTab from './components/FavoritesTab'
 import LegalModal from './components/LegalModal'
 import SnapSheet from './components/SnapSheet'
+import SideSheet from './components/SideSheet'
 import ColorDetailSheet, { type ColorDetail } from './components/ColorDetailSheet'
 import type { PickedColor } from './lib/colors'
 import { speakColor, preloadVoices } from './lib/tts'
@@ -46,11 +47,18 @@ export default function App() {
   const [legalMenuOpen, setLegalMenuOpen] = useState(false)
   const [pendingFavEntry, setPendingFavEntry] = useState<{ color: PickedColor; sourceFile?: string } | null>(null)
   const [sheetSnap, setSheetSnap] = useState<SnapPos>('peek')
+  const [sideSnap, setSideSnap] = useState<'narrow' | 'mid' | 'wide'>('mid')
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
+  const [ttsWarning, setTtsWarning] = useState(false)
 
   useEffect(() => { preloadVoices() }, [])
   useEffect(() => { autoSpeakRef.current = autoSpeak }, [autoSpeak])
+  useEffect(() => {
+    const handler = () => setTtsWarning(true)
+    window.addEventListener('tts-silent-fail', handler)
+    return () => window.removeEventListener('tts-silent-fail', handler)
+  }, [])
 
   const handleImageLoaded = (url: string, fileName?: string) => {
     setImageUrl(url)
@@ -263,6 +271,21 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
+      {ttsWarning && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-card border-b border-border shrink-0">
+          <Volume2 className="w-4 h-4 text-primary shrink-0" aria-hidden />
+          <p className="flex-1 text-sm text-foreground">
+            Kein Ton? Vorlesen funktioniert auf Linux am besten in <span className="font-semibold text-primary">Firefox</span>.
+          </p>
+          <button
+            onClick={() => setTtsWarning(false)}
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            aria-label="Schließen"
+          >
+            <X className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2.5 shrink-0">
@@ -331,8 +354,8 @@ export default function App() {
           {!imageUrl ? (
             <UploadScreen onImageLoaded={handleImageLoaded} />
           ) : (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 min-h-0">
+            <div className="flex flex-col landscape:flex-row h-full">
+              <div className="flex-1 min-h-0 min-w-0">
                 <ImageCanvas
                   imageUrl={imageUrl}
                   onColorPicked={handleColorPicked}
@@ -340,27 +363,56 @@ export default function App() {
                   pickedPoint={pickedPoint}
                 />
               </div>
-              <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
-                {pickedColor ? (
-                  <ColorCard
-                    color={pickedColor}
-                    isFavorite={isPickedColorFavorite}
-                    onToggleFavorite={handleTogglePickedFavorite}
-                    autoSpeak={autoSpeak}
-                    onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
-                    customLabel={pickedCustomLabel}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center p-6 text-center">
-                    <div>
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-muted-foreground"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+
+              {/* Portrait: bottom snap sheet */}
+              <div className="portrait:block landscape:hidden shrink-0">
+                <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
+                  {pickedColor ? (
+                    <ColorCard
+                      color={pickedColor}
+                      isFavorite={isPickedColorFavorite}
+                      onToggleFavorite={handleTogglePickedFavorite}
+                      autoSpeak={autoSpeak}
+                      onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
+                      customLabel={pickedCustomLabel}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center p-6 text-center">
+                      <div>
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-muted-foreground"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Tippe auf eine Stelle im Bild, um die Farbe zu analysieren</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">Tippe auf eine Stelle im Bild, um die Farbe zu analysieren</p>
                     </div>
-                  </div>
-                )}
-              </SnapSheet>
+                  )}
+                </SnapSheet>
+              </div>
+
+              {/* Landscape: right side sheet */}
+              <div className="portrait:hidden landscape:contents">
+                <SideSheet snap={sideSnap} onSnapChange={setSideSnap}>
+                  {pickedColor ? (
+                    <ColorCard
+                      color={pickedColor}
+                      isFavorite={isPickedColorFavorite}
+                      onToggleFavorite={handleTogglePickedFavorite}
+                      autoSpeak={autoSpeak}
+                      onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
+                      customLabel={pickedCustomLabel}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center p-6 text-center h-full">
+                      <div>
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-muted-foreground"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Tippe auf eine Stelle im Bild, um die Farbe zu analysieren</p>
+                      </div>
+                    </div>
+                  )}
+                </SideSheet>
+              </div>
             </div>
           )}
         </div>
