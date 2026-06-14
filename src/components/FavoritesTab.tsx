@@ -44,7 +44,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
   const handleExport = async () => {
     const csv = exportFavoritesToCsv(favorites, lists)
     if (window.electronAPI) {
-      await window.electronAPI.saveFile('colorvision-favoriten.csv', csv)
+      await window.electronAPI.saveFile?.('colorvision-favoriten.csv', csv)
       return
     }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -60,7 +60,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
 
   const handleImportClick = async () => {
     if (window.electronAPI) {
-      const csv = await window.electronAPI.openFile()
+      const csv = await window.electronAPI.openFile?.()
       if (csv) onImportCsv(csv, activeList?.id ?? lists[0]?.id ?? 'default')
       return
     }
