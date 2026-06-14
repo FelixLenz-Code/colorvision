@@ -4,15 +4,18 @@ Eine Web-App und Desktop-Anwendung zur Farberkennung in Bildern – entwickelt f
 
 ## Features
 
-- **Farberkennung per Tipp** – Lade ein Bild und tippe auf eine Stelle, um die Farbe zu identifizieren
-- **200+ Farbnamen** – Auf Deutsch und Englisch, mit Helligkeitsstufen
+- **Farberkennung per Tipp** – Bild laden, auf eine Stelle tippen, Farbe identifizieren
+- **200+ Farbnamen** – Deutsch und Englisch, mit Helligkeitsbeschreibung und Farbbeschreibung
 - **Text-to-Speech** – Farbnamen automatisch vorlesen lassen (Deutsch)
 - **Auto-Vorlesen** – Jede erkannte Farbe wird sofort vorgelesen
-- **Verlauf** – Alle erkannten Farben mit Zeitstempel
-- **Favoriten** – Farben in benutzerdefinierten Listen speichern
-- **CSV-Import/Export** – Favoriten sichern und übertragen
+- **Verlauf** – Alle erkannten Farben mit Zeitstempel; einzeln oder alle auf einmal in Favoriten speichern
+- **Favoriten** – Farben in mehreren benutzerdefinierten Listen organisieren
+- **Herz-Toggle im Verlauf** – Farben direkt aus dem Verlauf favorisieren und entfavorisieren
+- **CSV-Import/Export** – Favoritenlisten sichern und auf andere Geräte übertragen
 - **Zoom & Pan** – Mausrad-Zoom und Pinch-to-Zoom auf Touchgeräten
+- **Touch-optimiert** – Funktioniert auf iPad und Android-Tablets (inkl. Debounce gegen Doppelpicks)
 - **PWA** – Installierbar, offline-fähig
+- **Impressum & Datenschutz** – Vollständige rechtliche Informationen integriert
 
 ## Installation
 
@@ -54,6 +57,11 @@ npm install
 npm run dev
 ```
 
+Für Tests im lokalen Netzwerk (z. B. Tablet):
+```bash
+npx vite --host 0.0.0.0
+```
+
 **Electron (Desktop-Entwicklung):**
 ```bash
 npm run electron:dev
@@ -76,4 +84,4 @@ npm run electron:build # Web + Desktop-Binaries
 
 ## Lizenz
 
-MIT
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.de) – Namensnennung, nicht-kommerziell
