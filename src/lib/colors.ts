@@ -402,12 +402,11 @@ const BORDER_THRESHOLD = 0.09
 const EVERYDAY_COLORS = new Set([
   'Rot', 'Orange', 'Gelb', 'Grün', 'Blau', 'Lila', 'Violett', 'Rosa', 'Weiß', 'Schwarz', 'Grau', 'Braun',
   'Hellblau', 'Hellgrün', 'Hellrosa', 'Türkis', 'Beige', 'Creme',
-  'Gold', 'Silber', 'Lachs', 'Mintgrün', 'Marineblau', 'Himmelblau', 'Magenta', 'Flieder', 'Lavendel',
+  'Lachs', 'Mintgrün', 'Marineblau', 'Himmelblau', 'Magenta', 'Flieder', 'Lavendel',
   'Olivgrün', 'Khaki', 'Ocker', 'Senf', 'Korallenrot', 'Tiefrosa', 'Anthrazit',
-  'Pfirsich', 'Apricot', 'Schokolade', 'Weinrot', 'Bordeaux', 'Smaragdgrün', 'Indigo',
-  'Gelbgrün', 'Blaugrün', 'Blauviolett', 'Limette', 'Pflaume', 'Himbeere',
+  'Pfirsich', 'Apricot', 'Schokolade', 'Weinrot', 'Bordeaux',
+  'Gelbgrün', 'Blaugrün', 'Blauviolett', 'Limette',
   'Pastellblau', 'Pastellgrün', 'Pastellgelb', 'Pastellrosa', 'Pastellviolett',
-  'Neongelb', 'Neongrün', 'Neonorange', 'Neonpink',
 ])
 
 export function identifyColor(r: number, g: number, b: number): PickedColor {
