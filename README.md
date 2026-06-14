@@ -9,16 +9,24 @@
 
 ## Screenshots
 
+**Desktop (1080p)**
+
+![Desktop](screenshots/landscape-1080p.png)
+
+**Mobil**
+
 <table>
   <tr>
     <td align="center"><b>Farbe erkannt</b></td>
+    <td align="center"><b>Verlauf</b></td>
+    <td align="center"><b>Favoriten</b></td>
     <td align="center"><b>Dark Mode</b></td>
-    <td align="center"><b>Querformat</b></td>
   </tr>
   <tr>
-    <td><img src="screenshots/light-mode.png" width="220" alt="Light Mode mit erkannter Farbe"/></td>
-    <td><img src="screenshots/dark-mode.png" width="220" alt="Dark Mode"/></td>
-    <td><img src="screenshots/landscape.png" width="380" alt="Querformat"/></td>
+    <td><img src="screenshots/light-mode.png" width="180" alt="Farbe erkannt"/></td>
+    <td><img src="screenshots/history-tab.png" width="180" alt="Verlauf"/></td>
+    <td><img src="screenshots/favorites-tab.png" width="180" alt="Favoriten"/></td>
+    <td><img src="screenshots/dark-mode.png" width="180" alt="Dark Mode"/></td>
   </tr>
 </table>
 
