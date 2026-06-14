@@ -29,6 +29,14 @@ export const IMPRESSUM: LegalSection[] = [
     link: { text: 'creativecommons.org/licenses/by-nc/4.0', href: 'https://creativecommons.org/licenses/by-nc/4.0/deed.de' },
   },
   {
+    heading: 'Hinweis für selbst gehostete Instanzen',
+    content:
+      'Wer diese Software auf einem eigenen Server betreibt, ist für den Betrieb der eigenen Website selbst verantwortlich – ' +
+      'einschließlich eines eigenen Impressums, einer eigenen Datenschutzerklärung sowie der Einhaltung ' +
+      'aller geltenden gesetzlichen Anforderungen. Diese Texte beziehen sich ausschließlich auf das ' +
+      'Original-Projekt unter github.com/FelixLenz-Code/colorvision.',
+  },
+  {
     heading: 'Technische Hinweise',
     content:
       'Diese Anwendung läuft vollständig lokal auf Ihrem Gerät. Es findet keine Kommunikation mit externen Servern statt ' +
@@ -79,6 +87,14 @@ export const DATENSCHUTZ: LegalSection[] = [
     content:
       'Diese Anwendung verwendet keine Cookies, kein Tracking, keine Analyse-Tools und keine Werbung. ' +
       'Es werden keine Nutzungsprofile erstellt.',
+  },
+  {
+    heading: 'Hinweis für selbst gehostete Instanzen',
+    content:
+      'Wer diese Software auf einem eigenen Server betreibt, ist für den Betrieb der eigenen Website selbst verantwortlich – ' +
+      'einschließlich eines eigenen Impressums, einer eigenen Datenschutzerklärung sowie der Einhaltung ' +
+      'aller geltenden gesetzlichen Anforderungen. Diese Datenschutzerklärung bezieht sich ausschließlich auf das ' +
+      'Original-Projekt unter github.com/FelixLenz-Code/colorvision.',
   },
   {
     heading: 'Hinweis zur KI-Unterstützung',
