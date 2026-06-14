@@ -1,50 +1,79 @@
-# React + TypeScript + Vite
+# ColorVision – Farberkennung
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Eine Web-App und Desktop-Anwendung zur Farberkennung in Bildern – entwickelt für Menschen mit Farbenfehlsichtigkeit.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Farberkennung per Tipp** – Lade ein Bild und tippe auf eine Stelle, um die Farbe zu identifizieren
+- **200+ Farbnamen** – Auf Deutsch und Englisch, mit Helligkeitsstufen
+- **Text-to-Speech** – Farbnamen automatisch vorlesen lassen (Deutsch)
+- **Auto-Vorlesen** – Jede erkannte Farbe wird sofort vorgelesen
+- **Verlauf** – Alle erkannten Farben mit Zeitstempel
+- **Favoriten** – Farben in benutzerdefinierten Listen speichern
+- **CSV-Import/Export** – Favoriten sichern und übertragen
+- **Zoom & Pan** – Mausrad-Zoom und Pinch-to-Zoom auf Touchgeräten
+- **PWA** – Installierbar, offline-fähig
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### Als Desktop-App (empfohlen)
 
-- Configure the top-level `parserOptions` property like this:
+Lade die passende Datei von der [Releases-Seite](https://github.com/FelixLenz-Code/colorvision/releases) herunter:
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+| Plattform | Datei |
+|-----------|-------|
+| 🐧 Linux | `ColorVision-*.AppImage` |
+| 🪟 Windows | `ColorVision-*-Setup.exe` |
+| 🍎 macOS | `ColorVision-*.dmg` |
+
+**Linux:**
+```bash
+chmod +x ColorVision-*.AppImage
+./ColorVision-*.AppImage
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Als PWA selbst hosten (Linux-Server)
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Einzeilige Installation auf einem Ubuntu/Debian-Server:
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/FelixLenz-Code/colorvision/main/install.sh)"
 ```
+
+Optionale Parameter:
+```bash
+sudo bash install.sh --port 8080 --domain meine-domain.de
+```
+
+### Entwicklungsumgebung
+
+```bash
+git clone https://github.com/FelixLenz-Code/colorvision.git
+cd colorvision
+npm install
+npm run dev
+```
+
+**Electron (Desktop-Entwicklung):**
+```bash
+npm run electron:dev
+```
+
+**Build:**
+```bash
+npm run build          # Nur Web (PWA)
+npm run electron:build # Web + Desktop-Binaries
+```
+
+## Tech-Stack
+
+- **React 18** + TypeScript + Vite
+- **Tailwind CSS** für das Styling
+- **Lucide React** für Icons
+- **Electron 28** für Desktop-Apps
+- **vite-plugin-pwa** für PWA/Service-Worker
+- **Web Speech API** für Text-to-Speech
+
+## Lizenz
+
+MIT
