@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Heart, Volume2, VolumeX, Copy, Check, Info, X } from 'lucide-react'
+import { Heart, Volume2, VolumeX, Copy, Check, Info, X, AlertTriangle } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
 import { speakColor, stopSpeaking } from '../lib/tts'
 
@@ -86,6 +86,12 @@ export default function ColorCard({ color, isFavorite, onToggleFavorite, autoSpe
               <p className="text-xs mt-1 font-semibold px-2 py-0.5 rounded-full inline-block"
                 style={{ backgroundColor: pillBg, color: textColor }}>
                 {customLabel}
+              </p>
+            )}
+            {color.borderHint && (
+              <p className="text-xs mt-1.5 flex items-center gap-1 opacity-80" style={{ color: textColor }}>
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                Grenzt an {color.borderHint}
               </p>
             )}
           </div>

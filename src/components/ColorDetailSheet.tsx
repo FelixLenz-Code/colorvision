@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Heart, Volume2, Copy, Check, Info, X, Trash2, Edit2 } from 'lucide-react'
+import { Heart, Volume2, Copy, Check, Info, X, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
 import { speakColor } from '../lib/tts'
 
@@ -196,6 +196,16 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Quelldatei</p>
                 <p className="text-sm font-medium text-foreground truncate">{color.sourceFile}</p>
               </div>
+            </div>
+          )}
+
+          {/* Border hint */}
+          {color.borderHint && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-300 leading-snug">
+                Diese Farbe grenzt nah an <span className="font-semibold">{color.borderHint}</span> — von anderen kann sie als {color.borderHint} wahrgenommen werden.
+              </p>
             </div>
           )}
 

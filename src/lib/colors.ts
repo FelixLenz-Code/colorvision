@@ -16,6 +16,7 @@ export interface PickedColor {
   brightnessDe: string
   brightnessDeSpeech: string
   descriptionDe: string
+  borderHint?: string
 }
 
 export const COLOR_DB: ColorEntry[] = [
@@ -395,6 +396,8 @@ function getBrightness(l: number): { en: string; de: string; deSpeech: string } 
   return { en: 'very light', de: 'sehr hell', deSpeech: 'sehr helles' }
 }
 
+const BORDER_THRESHOLD = 0.09
+
 export function identifyColor(r: number, g: number, b: number): PickedColor {
   const hsl = rgbToHsl(r, g, b)
   const hex = rgbToHex(r, g, b)
@@ -405,6 +408,19 @@ export function identifyColor(r: number, g: number, b: number): PickedColor {
     const d = hslDistance(hsl.h, hsl.s, hsl.l, entry.h, entry.s, entry.l)
     if (d < bestDist) { bestDist = d; bestMatch = entry }
   }
+
+  // Find closest entry with a different color name to detect borderline colors
+  let secondBestDist = Infinity
+  let secondBestName: string | undefined
+  for (const entry of COLOR_DB) {
+    if (entry.nameDe === bestMatch.nameDe) continue
+    const d = hslDistance(hsl.h, hsl.s, hsl.l, entry.h, entry.s, entry.l)
+    if (d < secondBestDist) { secondBestDist = d; secondBestName = entry.nameDe }
+  }
+
+  const borderHint = (secondBestName && secondBestDist - bestDist < BORDER_THRESHOLD)
+    ? secondBestName
+    : undefined
 
   const brightness = getBrightness(hsl.l)
   const desc = COLOR_DESCRIPTIONS[bestMatch.nameDe] ?? `${bestMatch.nameDe} ist ein ${brightness.de}er Farbton.`
@@ -419,6 +435,7 @@ export function identifyColor(r: number, g: number, b: number): PickedColor {
     brightnessDe: brightness.de,
     brightnessDeSpeech: brightness.deSpeech,
     descriptionDe: desc,
+    borderHint,
   }
 }
 
