@@ -275,7 +275,7 @@ export default function App() {
         <div className="flex items-center gap-3 px-4 py-2.5 bg-card border-b border-border shrink-0">
           <Volume2 className="w-4 h-4 text-primary shrink-0" aria-hidden />
           <p className="flex-1 text-sm text-foreground">
-            Kein Ton? Vorlesen funktioniert auf Linux am besten in <span className="font-semibold text-primary">Firefox</span>.
+            Kein Ton? Vorlesen funktioniert am besten in <span className="font-semibold text-primary">Firefox</span>.
           </p>
           <button
             onClick={() => setTtsWarning(false)}
