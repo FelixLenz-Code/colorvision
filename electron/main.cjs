@@ -43,7 +43,8 @@ if (process.platform === 'linux') {
 
   ipcMain.handle('speak-text', (_event, text, rate) => {
     if (speakProc) { speakProc.kill(); speakProc = null }
-    const wpm = String(Math.max(80, Math.round(rate * 160)))
+    const r = Number(rate)
+    const wpm = String(isFinite(r) ? Math.max(80, Math.min(500, Math.round(r * 160))) : 130)
     speakProc = execFile('espeak-ng', ['-v', 'de', '-s', wpm, '--', text], (err) => {
       if (err && err.signal !== 'SIGTERM') console.error('[espeak-ng]', err.message)
       speakProc = null

@@ -157,7 +157,7 @@ export function importFavoritesFromCsv(csv: string, lists: FavoriteList[]): Favo
     if (!line.trim()) continue
     const c = parseCsvLine(line)
     const hex = c[iHex] ?? ''
-    if (!hex) continue
+    if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) continue
 
     const r = parseInt(c[iR] ?? '0', 10)
     const g = parseInt(c[iG] ?? '0', 10)

@@ -42,6 +42,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# ─── Eingaben validieren ─────────────────────────────────────────────────────
+[[ "$PORT" =~ ^[0-9]+$ ]] && [[ "$PORT" -ge 1 ]] && [[ "$PORT" -le 65535 ]] || die "Ungültiger Port: $PORT"
+[[ -z "$DOMAIN" || "$DOMAIN" =~ ^[a-zA-Z0-9._-]+$ ]] || die "Ungültige Domain: $DOMAIN"
+[[ "$INSTALL_DIR" =~ ^/ ]] || die "INSTALL_DIR muss ein absoluter Pfad sein"
+
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo -e "${BOLD}"
 echo "╔══════════════════════════════════════╗"
@@ -140,35 +145,52 @@ server {
     gzip_types text/plain text/css application/json application/javascript
                text/xml application/xml image/svg+xml;
 
+    # Sicherheits-Header (auf server-Ebene für alle location-Blöcke wiederholt,
+    # da Nginx add_header nicht von übergeordneten Blöcken vererbt)
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "clipboard-read=self, clipboard-write=self, microphone=()" always;
+    add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data:; script-src 'self'; connect-src 'self'" always;
+
     # Cache-Kontrolle für Assets
     location /assets/ {
         expires 1y;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "public, immutable" always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy no-referrer always;
+        add_header Permissions-Policy "clipboard-read=self, clipboard-write=self, microphone=()" always;
+        add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data:; script-src 'self'; connect-src 'self'" always;
     }
 
     # Service Worker darf nicht gecacht werden
     location /sw.js {
         expires -1;
-        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy no-referrer always;
+        add_header Permissions-Policy "clipboard-read=self, clipboard-write=self, microphone=()" always;
+        add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data:; script-src 'self'; connect-src 'self'" always;
     }
 
     # PWA-Manifest
     location /manifest.webmanifest {
         expires -1;
-        add_header Cache-Control "no-cache";
         default_type application/manifest+json;
+        add_header Cache-Control "no-cache" always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy no-referrer always;
+        add_header Permissions-Policy "clipboard-read=self, clipboard-write=self, microphone=()" always;
+        add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data:; script-src 'self'; connect-src 'self'" always;
     }
 
     # Alle anderen Pfade → index.html (SPA)
     location / {
         try_files \$uri \$uri/ /index.html;
     }
-
-    # Sicherheits-Header
-    add_header X-Frame-Options SAMEORIGIN;
-    add_header X-Content-Type-Options nosniff;
-    add_header Referrer-Policy no-referrer;
-    add_header Permissions-Policy "clipboard-read=self, clipboard-write=self, microphone=()";
 }
 NGINX
 
