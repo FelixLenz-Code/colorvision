@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon, ChevronLeft } from 'lucide-react'
+import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon, ChevronLeft, ChevronDown } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
 import ColorCard from './components/ColorCard'
@@ -17,6 +17,7 @@ import {
   loadFavorites, saveFavorites,
   loadLists, saveLists,
   importFavoritesFromCsv,
+  exportFavoritesToCsv, exportFavoritesToHtml, exportFavoritesToPng,
 } from './lib/storage'
 
 function uuid(): string {
@@ -50,6 +51,8 @@ export default function App() {
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
   const [dominantColors, setDominantColors] = useState<PickedColor[]>([])
+  const [dominantExportOpen, setDominantExportOpen] = useState(false)
+  const [pendingDominantAdd, setPendingDominantAdd] = useState(false)
   const [ttsWarning, setTtsWarning] = useState(false)
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('theme')
@@ -85,6 +88,51 @@ export default function App() {
     setSheetSnap('mid')
     setPickedPoint(null)
   }, [imageFileName])
+
+  const handleAddDominantToFavorites = useCallback((listId?: string) => {
+    const targetId = listId ?? lists[0]?.id ?? 'default'
+    const seen = new Set<string>(favorites.map(f => `${f.hex}|${f.nameDe}`))
+    const newEntries: FavoriteEntry[] = []
+    for (const color of dominantColors) {
+      const key = `${color.hex}|${color.nameDe}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      newEntries.push({ ...color, id: uuid(), savedAt: Date.now(), listId: targetId })
+    }
+    if (newEntries.length === 0) return
+    const updated = [...favorites, ...newEntries]
+    saveFavorites(updated)
+    setFavorites(updated)
+  }, [dominantColors, favorites, lists])
+
+  const handleExportDominant = (format: 'csv' | 'html' | 'png') => {
+    setDominantExportOpen(false)
+    const dummyList = [{ id: 'default', name: 'Dominante Farben', order: 0 }]
+    const entries: FavoriteEntry[] = dominantColors.map((c, i) => ({
+      ...c, id: `d${i}`, savedAt: Date.now(), listId: 'default',
+    }))
+    if (format === 'csv') {
+      const csv = exportFavoritesToCsv(entries, dummyList)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url; a.download = 'colorvision-dominante-farben.csv'
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+    } else if (format === 'html') {
+      const html = exportFavoritesToHtml(entries, 'Dominante Farben')
+      if (window.electronAPI?.printToPdf) {
+        window.electronAPI.printToPdf(html, 'colorvision-dominante-farben.pdf')
+      } else {
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      }
+    } else {
+      const dataUrl = exportFavoritesToPng(entries, 'Dominante Farben')
+      const a = document.createElement('a'); a.href = dataUrl; a.download = 'colorvision-dominante-farben.png'
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
+    }
+  }
 
   const handleColorPicked = useCallback((color: PickedColor, x: number, y: number) => {
     setPickedColor(color)
@@ -465,7 +513,37 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-2.5">Oder tippe direkt auf eine Stelle im Bild</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          onClick={() => lists.length > 1 ? setPendingDominantAdd(true) : handleAddDominantToFavorites()}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 active:bg-primary/30 transition-colors text-xs font-semibold"
+                        >
+                          <Heart className="w-3.5 h-3.5" />
+                          In Favoriten
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setDominantExportOpen(v => !v)}
+                            className="flex items-center gap-1 py-2 px-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-xs text-muted-foreground font-medium"
+                            title="Exportieren"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 3v12"/><path d="m17 8-5 5-5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                          {dominantExportOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setDominantExportOpen(false)} />
+                              <div className="absolute bottom-full right-0 mb-1.5 w-44 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                                <button onClick={() => handleExportDominant('csv')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als CSV</button>
+                                <div className="h-px bg-border mx-3" />
+                                <button onClick={() => handleExportDominant('html')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als PDF drucken</button>
+                                <div className="h-px bg-border mx-3" />
+                                <button onClick={() => handleExportDominant('png')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als PNG-Bild</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center p-6 text-center">
@@ -521,7 +599,37 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-4">Oder klicke direkt auf eine Stelle im Bild</p>
+                      <div className="flex items-center gap-2 mt-4">
+                        <button
+                          onClick={() => lists.length > 1 ? setPendingDominantAdd(true) : handleAddDominantToFavorites()}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 active:bg-primary/30 transition-colors text-xs font-semibold"
+                        >
+                          <Heart className="w-3.5 h-3.5" />
+                          In Favoriten
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setDominantExportOpen(v => !v)}
+                            className="flex items-center gap-1 py-2 px-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-xs text-muted-foreground font-medium"
+                            title="Exportieren"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 3v12"/><path d="m17 8-5 5-5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                          {dominantExportOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setDominantExportOpen(false)} />
+                              <div className="absolute bottom-full right-0 mb-1.5 w-44 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                                <button onClick={() => handleExportDominant('csv')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als CSV</button>
+                                <div className="h-px bg-border mx-3" />
+                                <button onClick={() => handleExportDominant('html')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als PDF drucken</button>
+                                <div className="h-px bg-border mx-3" />
+                                <button onClick={() => handleExportDominant('png')} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left">Als PNG-Bild</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center p-6 text-center h-full">
@@ -586,6 +694,33 @@ export default function App() {
                     addFavoriteColor(pendingFavEntry.color, list.id, pendingFavEntry.sourceFile)
                     setPendingFavEntry(null)
                   }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/60 transition-colors text-left"
+                >
+                  <span className="font-medium text-sm text-foreground">{list.name}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {favorites.filter(f => f.listId === list.id).length} Farben
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add dominant colors to list modal */}
+      {pendingDominantAdd && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPendingDominantAdd(false)} />
+          <div className="relative z-10 w-full sm:max-w-sm bg-card rounded-t-2xl sm:rounded-2xl shadow-xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="font-bold text-base text-foreground">In Liste speichern</h2>
+              <span className="text-sm text-muted-foreground">{dominantColors.length} Farben</span>
+            </div>
+            <div className="p-3 space-y-1 max-h-72 overflow-y-auto">
+              {lists.map(list => (
+                <button
+                  key={list.id}
+                  onClick={() => { handleAddDominantToFavorites(list.id); setPendingDominantAdd(false) }}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/60 transition-colors text-left"
                 >
                   <span className="font-medium text-sm text-foreground">{list.name}</span>
