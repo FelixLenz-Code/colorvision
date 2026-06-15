@@ -6,6 +6,9 @@ interface Props {
   children: ReactNode
   snap: SnapPos
   onSnapChange: (s: SnapPos) => void
+  onTouchStart?: (e: React.TouchEvent) => void
+  onTouchEnd?: (e: React.TouchEvent) => void
+  onTouchCancel?: (e: React.TouchEvent) => void
 }
 
 const HANDLE_W = 20
@@ -30,7 +33,7 @@ function nearestSnap(w: number): SnapPos {
   )[0]
 }
 
-export default function SideSheet({ children, snap, onSnapChange }: Props) {
+export default function SideSheet({ children, snap, onSnapChange, onTouchStart, onTouchEnd, onTouchCancel }: Props) {
   const [width, setWidth] = useState(() => getW(snap))
   const [animating, setAnimating] = useState(false)
   const dragging = useRef(false)
@@ -92,7 +95,12 @@ export default function SideSheet({ children, snap, onSnapChange }: Props) {
         <div className="w-1 h-10 rounded-full bg-muted-foreground/30" />
       </div>
 
-      <div className="flex-1 overflow-y-auto min-w-0">
+      <div
+        className="flex-1 overflow-y-auto min-w-0 h-full"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchCancel}
+      >
         {children}
       </div>
     </div>

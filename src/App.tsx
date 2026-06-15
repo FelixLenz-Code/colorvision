@@ -571,7 +571,7 @@ export default function App() {
 
               {/* Landscape: right side sheet */}
               <div className="portrait:hidden landscape:contents">
-                <SideSheet snap={sideSnap} onSnapChange={setSideSnap}>
+                <SideSheet snap={sideSnap} onSnapChange={setSideSnap} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel}>
                   {pickedColor ? (
                     <div className="flex flex-col h-full">
                       {dominantColors.length > 0 && (
