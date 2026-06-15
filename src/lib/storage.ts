@@ -143,8 +143,14 @@ function hexContrast(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#1a1a2e' : '#ffffff'
 }
 
-export function exportFavoritesToHtml(favorites: FavoriteEntry[], listName: string): string {
+export function exportFavoritesToHtml(favorites: FavoriteEntry[], listName: string, meta?: { time?: string; sourceFile?: string }): string {
   const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const metaParts = [
+    `Exportiert am ${date}`,
+    meta?.time ? `${meta.time} Uhr` : null,
+    meta?.sourceFile ? htmlEsc(meta.sourceFile) : null,
+    `${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}`,
+  ].filter(Boolean).join(' &middot; ')
   const cards = favorites.map(f => {
     const tc = hexContrast(f.hex)
     const label = f.customLabel ? `<div class="label">${htmlEsc(f.customLabel)}</div>` : ''
@@ -176,7 +182,7 @@ h1{font-size:1.4rem;margin-bottom:4px}
 <button class="print-btn" onclick="window.print()">Drucken / Als PDF speichern</button>
 <script>window.addEventListener('load',function(){setTimeout(window.print,400);})</script>
 <h1>ColorVision – ${htmlEsc(listName)}</h1>
-<p class="meta">Exportiert am ${date} &middot; ${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}</p>
+<p class="meta">${metaParts}</p>
 <div class="grid">
 ${cards}
 </div>
@@ -184,9 +190,10 @@ ${cards}
 </html>`
 }
 
-export function exportFavoritesToPng(favorites: FavoriteEntry[], listName: string): string {
+export function exportFavoritesToPng(favorites: FavoriteEntry[], listName: string, meta?: { time?: string; sourceFile?: string }): string {
   const COLS = Math.min(favorites.length, 4)
-  const SW = 180, SH = 120, PAD = 16, TITLE_H = 60, RADIUS = 14
+  const SW = 180, SH = 120, PAD = 16, RADIUS = 14
+  const TITLE_H = meta?.sourceFile ? 76 : 60
   const rows = Math.ceil(favorites.length / COLS) || 1
   const W = COLS * (SW + PAD) + PAD
   const H = TITLE_H + rows * (SH + PAD) + PAD
@@ -204,7 +211,12 @@ export function exportFavoritesToPng(favorites: FavoriteEntry[], listName: strin
   ctx.font = '13px system-ui,sans-serif'
   ctx.fillStyle = '#888'
   const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  ctx.fillText(`${date} · ${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}`, PAD, 50)
+  const dateLine = [date, meta?.time ? `${meta.time} Uhr` : null, `${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}`].filter(Boolean).join(' · ')
+  ctx.fillText(dateLine, PAD, 50)
+  if (meta?.sourceFile) {
+    ctx.font = '12px system-ui,sans-serif'
+    ctx.fillText(truncate(meta.sourceFile, 60), PAD, 68)
+  }
 
   favorites.forEach((f, idx) => {
     const col = idx % COLS

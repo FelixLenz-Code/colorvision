@@ -113,6 +113,10 @@ export default function App() {
     const entries: FavoriteEntry[] = dominantColors.map((c, i) => ({
       ...c, id: `d${i}`, savedAt: Date.now(), listId: 'default',
     }))
+    const meta = {
+      time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+      sourceFile: imageFileName,
+    }
     if (format === 'csv') {
       const csv = exportFavoritesToCsv(entries, dummyList)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -120,7 +124,7 @@ export default function App() {
       const a = document.createElement('a'); a.href = url; a.download = 'colorvision-dominante-farben.csv'
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
     } else if (format === 'html') {
-      const html = exportFavoritesToHtml(entries, 'Dominante Farben')
+      const html = exportFavoritesToHtml(entries, 'Dominante Farben', meta)
       if (window.electronAPI?.printToPdf) {
         window.electronAPI.printToPdf(html, 'colorvision-dominante-farben.pdf')
       } else {
@@ -130,7 +134,7 @@ export default function App() {
         setTimeout(() => URL.revokeObjectURL(url), 60000)
       }
     } else {
-      const dataUrl = exportFavoritesToPng(entries, 'Dominante Farben')
+      const dataUrl = exportFavoritesToPng(entries, 'Dominante Farben', meta)
       const a = document.createElement('a'); a.href = dataUrl; a.download = 'colorvision-dominante-farben.png'
       document.body.appendChild(a); a.click(); document.body.removeChild(a)
     }
