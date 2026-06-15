@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon, ChevronLeft, ChevronDown } from 'lucide-react'
+import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon, ChevronLeft, ChevronDown, Plus, Check } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
 import ColorCard from './components/ColorCard'
@@ -53,6 +53,8 @@ export default function App() {
   const [dominantColors, setDominantColors] = useState<PickedColor[]>([])
   const [dominantExportOpen, setDominantExportOpen] = useState(false)
   const [pendingDominantAdd, setPendingDominantAdd] = useState(false)
+  const [dominantNewListName, setDominantNewListName] = useState('')
+  const [dominantCreatingList, setDominantCreatingList] = useState(false)
   const [ttsWarning, setTtsWarning] = useState(false)
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('theme')
@@ -515,7 +517,7 @@ export default function App() {
                       </div>
                       <div className="flex items-center gap-2 mt-3">
                         <button
-                          onClick={() => lists.length > 1 ? setPendingDominantAdd(true) : handleAddDominantToFavorites()}
+                          onClick={() => setPendingDominantAdd(true)}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 active:bg-primary/30 transition-colors text-xs font-semibold"
                         >
                           <Heart className="w-3.5 h-3.5" />
@@ -601,7 +603,7 @@ export default function App() {
                       </div>
                       <div className="flex items-center gap-2 mt-4">
                         <button
-                          onClick={() => lists.length > 1 ? setPendingDominantAdd(true) : handleAddDominantToFavorites()}
+                          onClick={() => setPendingDominantAdd(true)}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 active:bg-primary/30 transition-colors text-xs font-semibold"
                         >
                           <Heart className="w-3.5 h-3.5" />
@@ -710,7 +712,7 @@ export default function App() {
       {/* Add dominant colors to list modal */}
       {pendingDominantAdd && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPendingDominantAdd(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setPendingDominantAdd(false); setDominantCreatingList(false); setDominantNewListName('') }} />
           <div className="relative z-10 w-full sm:max-w-sm bg-card rounded-t-2xl sm:rounded-2xl shadow-xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-bold text-base text-foreground">In Liste speichern</h2>
@@ -720,7 +722,7 @@ export default function App() {
               {lists.map(list => (
                 <button
                   key={list.id}
-                  onClick={() => { handleAddDominantToFavorites(list.id); setPendingDominantAdd(false) }}
+                  onClick={() => { handleAddDominantToFavorites(list.id); setPendingDominantAdd(false); setDominantCreatingList(false); setDominantNewListName('') }}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted/60 transition-colors text-left"
                 >
                   <span className="font-medium text-sm text-foreground">{list.name}</span>
@@ -729,6 +731,63 @@ export default function App() {
                   </span>
                 </button>
               ))}
+            </div>
+            <div className="px-3 pb-3 border-t border-border pt-2">
+              {dominantCreatingList ? (
+                <div className="flex items-center gap-2 px-1 py-1">
+                  <input
+                    autoFocus
+                    value={dominantNewListName}
+                    onChange={e => setDominantNewListName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && dominantNewListName.trim()) {
+                        const newList = { id: uuid(), name: dominantNewListName.trim(), order: lists.length }
+                        const updatedLists = [...lists, newList]
+                        saveLists(updatedLists)
+                        setLists(updatedLists)
+                        handleAddDominantToFavorites(newList.id)
+                        setPendingDominantAdd(false)
+                        setDominantCreatingList(false)
+                        setDominantNewListName('')
+                      }
+                      if (e.key === 'Escape') { setDominantCreatingList(false); setDominantNewListName('') }
+                    }}
+                    placeholder="Listenname …"
+                    className="flex-1 bg-muted/60 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  <button
+                    disabled={!dominantNewListName.trim()}
+                    onClick={() => {
+                      if (!dominantNewListName.trim()) return
+                      const newList = { id: uuid(), name: dominantNewListName.trim(), order: lists.length }
+                      const updatedLists = [...lists, newList]
+                      saveLists(updatedLists)
+                      setLists(updatedLists)
+                      handleAddDominantToFavorites(newList.id)
+                      setPendingDominantAdd(false)
+                      setDominantCreatingList(false)
+                      setDominantNewListName('')
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-40 shrink-0"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { setDominantCreatingList(false); setDominantNewListName('') }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setDominantCreatingList(true)}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-muted/60 transition-colors text-left text-primary text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Neue Liste erstellen
+                </button>
+              )}
             </div>
           </div>
         </div>
