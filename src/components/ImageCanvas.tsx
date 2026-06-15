@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { ZoomIn, ZoomOut, Maximize2, Upload } from 'lucide-react'
-import { getPixelColor, identifyColor } from '../lib/colors'
+import { getPixelColor, identifyColor, extractDominantColors } from '../lib/colors'
 import type { PickedColor } from '../lib/colors'
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   onColorPicked: (color: PickedColor, x: number, y: number) => void
   onNewImage: () => void
   pickedPoint: { x: number; y: number } | null
+  onDominantColors?: (colors: PickedColor[]) => void
 }
 
 interface Transform {
@@ -20,7 +21,7 @@ const LENS_SIZE = 120   // px diameter of the magnifier circle
 const LENS_SRC  = 24   // source pixels sampled from canvas (= 5× zoom)
 const HOLD_MS   = 180  // ms finger must be held before lens appears
 
-export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, pickedPoint }: Props) {
+export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, pickedPoint, onDominantColors }: Props) {
   const canvasRef      = useRef<HTMLCanvasElement>(null)
   const containerRef   = useRef<HTMLDivElement>(null)
   const magnifierRef   = useRef<HTMLCanvasElement>(null)
@@ -47,6 +48,7 @@ export default function ImageCanvas({ imageUrl, onColorPicked, onNewImage, picke
       const ctx = canvas.getContext('2d')
       ctx?.drawImage(img, 0, 0)
       fitImage()
+      if (onDominantColors) onDominantColors(extractDominantColors(canvas, 5))
     }
     img.src = imageUrl
   }, [imageUrl])

@@ -49,6 +49,7 @@ export default function App() {
   const [sideSnap, setSideSnap] = useState<'narrow' | 'mid' | 'wide'>('mid')
   const [detail, setDetail] = useState<{ color: ColorDetail; sourceId: string; source: 'history' | 'favorites' } | null>(null)
   const [imageFileName, setImageFileName] = useState<string | undefined>(undefined)
+  const [dominantColors, setDominantColors] = useState<PickedColor[]>([])
   const [ttsWarning, setTtsWarning] = useState(false)
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('theme')
@@ -74,7 +75,16 @@ export default function App() {
     setPickedPoint(null)
     setSheetSnap('peek')
     setImageFileName(fileName)
+    setDominantColors([])
   }
+
+  const handlePickDominantColor = useCallback((color: PickedColor) => {
+    setPickedColor(color)
+    addToHistory(color, imageFileName)
+    setHistory(loadHistory())
+    setSheetSnap('mid')
+    setPickedPoint(null)
+  }, [imageFileName])
 
   const handleColorPicked = useCallback((color: PickedColor, x: number, y: number) => {
     setPickedColor(color)
@@ -410,6 +420,7 @@ export default function App() {
                   onColorPicked={handleColorPicked}
                   onNewImage={handleNewImage}
                   pickedPoint={pickedPoint}
+                  onDominantColors={setDominantColors}
                 />
               </div>
 
@@ -425,6 +436,24 @@ export default function App() {
                       onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
                       customLabel={pickedCustomLabel}
                     />
+                  ) : dominantColors.length > 0 ? (
+                    <div className="p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Dominante Farben</p>
+                      <div className="flex gap-2">
+                        {dominantColors.map((color, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handlePickDominantColor(color)}
+                            className="flex-1 flex flex-col items-center gap-1 group"
+                            title={color.nameDe}
+                          >
+                            <div className="w-full h-11 rounded-xl shadow-sm group-hover:scale-105 group-active:scale-95 transition-transform" style={{ backgroundColor: color.hex }} />
+                            <span className="text-[9px] text-muted-foreground leading-tight line-clamp-1 text-center">{color.nameDe}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-2.5">Oder tippe direkt auf eine Stelle im Bild</p>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center p-6 text-center">
                       <div>
@@ -450,6 +479,24 @@ export default function App() {
                       onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
                       customLabel={pickedCustomLabel}
                     />
+                  ) : dominantColors.length > 0 ? (
+                    <div className="p-5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Dominante Farben</p>
+                      <div className="grid grid-cols-5 gap-2">
+                        {dominantColors.map((color, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handlePickDominantColor(color)}
+                            className="flex flex-col items-center gap-1.5 group"
+                            title={color.nameDe}
+                          >
+                            <div className="w-full aspect-square rounded-xl shadow-sm group-hover:scale-105 group-active:scale-95 transition-transform" style={{ backgroundColor: color.hex }} />
+                            <span className="text-[9px] text-muted-foreground leading-tight line-clamp-1 text-center w-full">{color.nameDe}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-4">Oder klicke direkt auf eine Stelle im Bild</p>
+                    </div>
                   ) : (
                     <div className="flex items-center justify-center p-6 text-center h-full">
                       <div>

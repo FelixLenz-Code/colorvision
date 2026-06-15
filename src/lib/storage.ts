@@ -183,6 +183,61 @@ ${cards}
 </html>`
 }
 
+export function exportFavoritesToPng(favorites: FavoriteEntry[], listName: string): string {
+  const COLS = Math.min(favorites.length, 4)
+  const SW = 180, SH = 120, PAD = 16, TITLE_H = 60, RADIUS = 14
+  const rows = Math.ceil(favorites.length / COLS) || 1
+  const W = COLS * (SW + PAD) + PAD
+  const H = TITLE_H + rows * (SH + PAD) + PAD
+
+  const canvas = document.createElement('canvas')
+  canvas.width = W; canvas.height = H
+  const ctx = canvas.getContext('2d')!
+
+  ctx.fillStyle = '#f4f4f8'
+  ctx.fillRect(0, 0, W, H)
+
+  ctx.fillStyle = '#1a1a2e'
+  ctx.font = 'bold 20px system-ui,sans-serif'
+  ctx.fillText(`ColorVision – ${listName}`, PAD, 28)
+  ctx.font = '13px system-ui,sans-serif'
+  ctx.fillStyle = '#888'
+  const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  ctx.fillText(`${date} · ${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}`, PAD, 50)
+
+  favorites.forEach((f, idx) => {
+    const col = idx % COLS
+    const row = Math.floor(idx / COLS)
+    const x = PAD + col * (SW + PAD)
+    const y = TITLE_H + row * (SH + PAD)
+
+    ctx.beginPath()
+    ctx.roundRect(x, y, SW, SH, RADIUS)
+    ctx.fillStyle = f.hex
+    ctx.fill()
+
+    const tc = hexContrast(f.hex)
+    ctx.fillStyle = tc
+    ctx.font = 'bold 13px system-ui,sans-serif'
+    ctx.fillText(truncate(f.customLabel ?? f.nameDe, 18), x + 10, y + SH - 32)
+    ctx.font = '10px system-ui,sans-serif'
+    ctx.globalAlpha = 0.75
+    ctx.fillText(f.nameEn, x + 10, y + SH - 19)
+    ctx.globalAlpha = 1
+    ctx.font = '600 11px monospace'
+    ctx.fillStyle = tc
+    ctx.globalAlpha = 0.85
+    ctx.fillText(f.hex, x + 10, y + SH - 6)
+    ctx.globalAlpha = 1
+  })
+
+  return canvas.toDataURL('image/png')
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max - 1) + '…' : s
+}
+
 export function importFavoritesFromCsv(csv: string, lists: FavoriteList[]): FavoriteEntry[] {
   const rawLines = csv.trim().split(/\r?\n/)
   if (rawLines.length < 2) return []

@@ -460,3 +460,48 @@ export function getPixelColor(canvas: HTMLCanvasElement, x: number, y: number): 
   if (d[3] < 128) return null // transparent pixel (outside image bounds within canvas)
   return { r: d[0], g: d[1], b: d[2] }
 }
+
+export function extractDominantColors(canvas: HTMLCanvasElement, count = 5): PickedColor[] {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return []
+  const { width, height } = canvas
+  // Sample at most ~12 000 pixels for performance
+  const step = Math.max(1, Math.floor(Math.sqrt((width * height) / 12000)))
+  const data = ctx.getImageData(0, 0, width, height).data
+
+  // 5-bit quantization → 32 levels per channel
+  const BITS = 5
+  const LEVELS = 1 << BITS
+  type Bucket = { count: number; rSum: number; gSum: number; bSum: number }
+  const buckets = new Map<number, Bucket>()
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const i = (y * width + x) * 4
+      if (data[i + 3] < 128) continue
+      const r = data[i], g = data[i + 1], b = data[i + 2]
+      const key = (r >> (8 - BITS)) * LEVELS * LEVELS + (g >> (8 - BITS)) * LEVELS + (b >> (8 - BITS))
+      const bkt = buckets.get(key)
+      if (bkt) { bkt.count++; bkt.rSum += r; bkt.gSum += g; bkt.bSum += b }
+      else buckets.set(key, { count: 1, rSum: r, gSum: g, bSum: b })
+    }
+  }
+
+  const sorted = Array.from(buckets.values()).sort((a, b) => b.count - a.count)
+  const result: PickedColor[] = []
+
+  for (const bkt of sorted) {
+    const r = Math.round(bkt.rSum / bkt.count)
+    const g = Math.round(bkt.gSum / bkt.count)
+    const b = Math.round(bkt.bSum / bkt.count)
+    // Skip if too similar (Euclidean RGB distance < 40) to already chosen colors
+    const tooClose = result.some(c => {
+      const dr = c.rgb.r - r, dg = c.rgb.g - g, db = c.rgb.b - b
+      return dr * dr + dg * dg + db * db < 1600
+    })
+    if (!tooClose) result.push(identifyColor(r, g, b))
+    if (result.length >= count) break
+  }
+
+  return result
+}
