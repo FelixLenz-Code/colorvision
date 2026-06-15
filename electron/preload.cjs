@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, process: electronProcess } = require('electr
 const api = {
   saveFile: (filename, content) => ipcRenderer.invoke('save-file', filename, content),
   openFile: () => ipcRenderer.invoke('open-file'),
+  printToPdf: (html, filename) => ipcRenderer.invoke('print-to-pdf', html, filename),
 }
 
 // On Linux, Web Speech API can't reach speech-dispatcher from inside an AppImage.

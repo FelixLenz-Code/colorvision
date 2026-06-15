@@ -5,6 +5,7 @@ declare global {
     electronAPI?: {
       saveFile?: (filename: string, content: string) => Promise<boolean>
       openFile?: () => Promise<string | null>
+      printToPdf?: (html: string, filename: string) => Promise<boolean>
       speakElectron?: (text: string, rate: number) => void
       stopSpeakingElectron?: () => void
     }

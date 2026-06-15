@@ -69,12 +69,11 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
   const handleExportHtml = () => {
     setExportMenuOpen(false)
     const html = exportFavoritesToHtml(activeFavorites, activeList?.name ?? 'Favoriten')
-    if (window.electronAPI) {
-      // In Electron: save HTML file (user can open it in browser and print)
-      window.electronAPI.saveFile?.(`colorvision-${safeName}.html`, html)
+    if (window.electronAPI?.printToPdf) {
+      window.electronAPI.printToPdf(html, `colorvision-${safeName}.pdf`)
       return
     }
-    // In browser: open in new tab so the user can Ctrl+P / print to PDF
+    // Web: open in new tab — HTML auto-triggers print dialog on load
     const blob = new Blob([html], { type: 'text/html;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     window.open(url, '_blank')

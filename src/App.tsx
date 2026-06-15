@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon } from 'lucide-react'
+import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon, ChevronLeft } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
 import ColorCard from './components/ColorCard'
@@ -428,14 +428,27 @@ export default function App() {
               <div className="portrait:block landscape:hidden shrink-0">
                 <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
                   {pickedColor ? (
-                    <ColorCard
-                      color={pickedColor}
-                      isFavorite={isPickedColorFavorite}
-                      onToggleFavorite={handleTogglePickedFavorite}
-                      autoSpeak={autoSpeak}
-                      onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
-                      customLabel={pickedCustomLabel}
-                    />
+                    <div className="flex flex-col h-full">
+                      {dominantColors.length > 0 && (
+                        <button
+                          onClick={() => { setPickedColor(null); setPickedPoint(null) }}
+                          className="flex items-center gap-1.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border-b border-border/50 shrink-0"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Farbpalette
+                        </button>
+                      )}
+                      <div className="flex-1 min-h-0">
+                        <ColorCard
+                          color={pickedColor}
+                          isFavorite={isPickedColorFavorite}
+                          onToggleFavorite={handleTogglePickedFavorite}
+                          autoSpeak={autoSpeak}
+                          onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
+                          customLabel={pickedCustomLabel}
+                        />
+                      </div>
+                    </div>
                   ) : dominantColors.length > 0 ? (
                     <div className="p-4">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Dominante Farben</p>
@@ -471,14 +484,27 @@ export default function App() {
               <div className="portrait:hidden landscape:contents">
                 <SideSheet snap={sideSnap} onSnapChange={setSideSnap}>
                   {pickedColor ? (
-                    <ColorCard
-                      color={pickedColor}
-                      isFavorite={isPickedColorFavorite}
-                      onToggleFavorite={handleTogglePickedFavorite}
-                      autoSpeak={autoSpeak}
-                      onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
-                      customLabel={pickedCustomLabel}
-                    />
+                    <div className="flex flex-col h-full">
+                      {dominantColors.length > 0 && (
+                        <button
+                          onClick={() => { setPickedColor(null); setPickedPoint(null) }}
+                          className="flex items-center gap-1.5 px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors border-b border-border/50 shrink-0"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Farbpalette
+                        </button>
+                      )}
+                      <div className="flex-1 min-h-0">
+                        <ColorCard
+                          color={pickedColor}
+                          isFavorite={isPickedColorFavorite}
+                          onToggleFavorite={handleTogglePickedFavorite}
+                          autoSpeak={autoSpeak}
+                          onToggleAutoSpeak={() => setAutoSpeak(v => !v)}
+                          customLabel={pickedCustomLabel}
+                        />
+                      </div>
+                    </div>
                   ) : dominantColors.length > 0 ? (
                     <div className="p-5">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Dominante Farben</p>

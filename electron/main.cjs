@@ -56,6 +56,32 @@ if (process.platform === 'linux') {
   })
 }
 
+ipcMain.handle('print-to-pdf', async (event, htmlContent, filename) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const tmpPath = path.join(app.getPath('temp'), 'colorvision-print.html')
+  fs.writeFileSync(tmpPath, htmlContent, 'utf-8')
+
+  const pdfWin = new BrowserWindow({
+    show: false,
+    width: 1200,
+    height: 900,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  })
+  await pdfWin.loadFile(tmpPath)
+  await new Promise(resolve => setTimeout(resolve, 600))
+  const pdfBuffer = await pdfWin.webContents.printToPDF({ printBackground: true, pageSize: 'A4' })
+  pdfWin.close()
+  try { fs.unlinkSync(tmpPath) } catch (_) {}
+
+  const { filePath } = await dialog.showSaveDialog(win, {
+    defaultPath: path.join(app.getPath('downloads'), filename ?? 'colorvision-favoriten.pdf'),
+    filters: [{ name: 'PDF-Dokument', extensions: ['pdf'] }],
+  })
+  if (!filePath) return false
+  fs.writeFileSync(filePath, pdfBuffer)
+  return true
+})
+
 ipcMain.handle('save-file', async (event, filename, content) => {
   const win = BrowserWindow.fromWebContents(event.sender)
   const { filePath } = await dialog.showSaveDialog(win, {

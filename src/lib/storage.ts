@@ -174,6 +174,7 @@ h1{font-size:1.4rem;margin-bottom:4px}
 </head>
 <body>
 <button class="print-btn" onclick="window.print()">Drucken / Als PDF speichern</button>
+<script>window.addEventListener('load',function(){setTimeout(window.print,400);})</script>
 <h1>ColorVision – ${htmlEsc(listName)}</h1>
 <p class="meta">Exportiert am ${date} &middot; ${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}</p>
 <div class="grid">
