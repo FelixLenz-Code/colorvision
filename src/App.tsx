@@ -352,7 +352,7 @@ export default function App() {
     const dy = e.changedTouches[0].clientY - touchStartY.current
     touchStartX.current = null
     touchStartY.current = null
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2.5) return
     const idx = tabOrder.indexOf(tab)
     if (dx < 0 && idx < tabOrder.length - 1) setTab(tabOrder[idx + 1])
     if (dx > 0 && idx > 0) setTab(tabOrder[idx - 1])
@@ -479,7 +479,7 @@ export default function App() {
               </div>
 
               {/* Portrait: bottom snap sheet */}
-              <div className="portrait:block landscape:hidden shrink-0">
+              <div className="portrait:block landscape:hidden shrink-0" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                 <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
                   {pickedColor ? (
                     <div className="flex flex-col h-full">
