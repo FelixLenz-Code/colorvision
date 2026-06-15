@@ -7,6 +7,9 @@ interface Props {
   snap: SnapPos
   onSnapChange: (s: SnapPos) => void
   peekH?: number
+  onTouchStart?: (e: React.TouchEvent) => void
+  onTouchEnd?: (e: React.TouchEvent) => void
+  onTouchCancel?: (e: React.TouchEvent) => void
 }
 
 const HANDLE_H = 24
@@ -31,7 +34,7 @@ function nearestSnap(h: number, peekH: number): SnapPos {
   )[0]
 }
 
-export default function SnapSheet({ children, snap, onSnapChange, peekH = 72 }: Props) {
+export default function SnapSheet({ children, snap, onSnapChange, peekH = 72, onTouchStart, onTouchEnd, onTouchCancel }: Props) {
   const [height, setHeight] = useState(() => getH(snap, peekH))
   const [animating, setAnimating] = useState(false)
   const dragging = useRef(false)
@@ -95,6 +98,9 @@ export default function SnapSheet({ children, snap, onSnapChange, peekH = 72 }: 
       <div
         className="overflow-y-auto"
         style={{ height: Math.max(0, height - HANDLE_H) }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchCancel}
       >
         {children}
       </div>

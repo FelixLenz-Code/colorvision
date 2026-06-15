@@ -358,6 +358,11 @@ export default function App() {
     if (dx > 0 && idx > 0) setTab(tabOrder[idx - 1])
   }
 
+  const handleTouchCancel = () => {
+    touchStartX.current = null
+    touchStartY.current = null
+  }
+
   const historyBadge = history.length > 0 ? history.length : null
   const favoritesBadge = favorites.length > 0 ? favorites.length : null
 
@@ -479,8 +484,8 @@ export default function App() {
               </div>
 
               {/* Portrait: bottom snap sheet */}
-              <div className="portrait:block landscape:hidden shrink-0" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72}>
+              <div className="portrait:block landscape:hidden shrink-0">
+                <SnapSheet snap={sheetSnap} onSnapChange={setSheetSnap} peekH={72} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchCancel}>
                   {pickedColor ? (
                     <div className="flex flex-col h-full">
                       {dominantColors.length > 0 && (
