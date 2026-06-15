@@ -1,4 +1,4 @@
-import { Heart, Volume2, Trash2, Save } from 'lucide-react'
+import { Heart, Volume2, Trash2, Save, Pin } from 'lucide-react'
 import type { HistoryEntry } from '../lib/storage'
 import { speakColor } from '../lib/tts'
 
@@ -10,9 +10,11 @@ interface Props {
   isFavorite: (id: string) => boolean
   onRemove: (id: string) => void
   onOpenDetail: (entry: HistoryEntry) => void
+  onPinEntry: (id: string) => void
 }
 
-export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite, onRemove, onOpenDetail }: Props) {
+export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite, isFavorite, onRemove, onOpenDetail, onPinEntry }: Props) {
+  const sorted = [...history].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
   if (history.length === 0) {
     return (
       <div className="flex flex-col h-full">
@@ -62,19 +64,23 @@ export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite,
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {history.map(entry => {
+        {sorted.map(entry => {
           const fav = isFavorite(entry.id)
           const time = new Date(entry.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
           return (
             <div
               key={entry.id}
               onClick={() => onOpenDetail(entry)}
-              className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 cursor-pointer"
+              className={`flex items-center gap-3 px-5 py-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 cursor-pointer ${entry.pinned ? 'bg-primary/5' : ''}`}
             >
-              <div
-                className="w-10 h-10 rounded-xl shrink-0 shadow-sm"
-                style={{ backgroundColor: entry.hex }}
-              />
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-xl shadow-sm" style={{ backgroundColor: entry.hex }} />
+                {entry.pinned && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Pin className="w-2.5 h-2.5" fill="currentColor" />
+                  </span>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span className="font-semibold text-foreground text-sm">{entry.nameDe}</span>
@@ -87,6 +93,13 @@ export default function HistoryTab({ history, onSaveAll, onClearAll, onFavorite,
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={e => { e.stopPropagation(); onPinEntry(entry.id) }}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors ${entry.pinned ? 'text-primary' : 'text-muted-foreground'}`}
+                  title={entry.pinned ? 'Anheften aufheben' : 'Anheften'}
+                >
+                  <Pin className="w-4 h-4" fill={entry.pinned ? 'currentColor' : 'none'} />
+                </button>
                 <button
                   onClick={e => { e.stopPropagation(); onFavorite(entry) }}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Eye, Palette, Clock, Heart, Info, Volume2, X, Sun, Moon } from 'lucide-react'
 import UploadScreen from './components/UploadScreen'
 import ImageCanvas from './components/ImageCanvas'
@@ -227,6 +227,12 @@ export default function App() {
     setHistory(updated)
   }
 
+  const handlePinHistoryEntry = (id: string) => {
+    const updated = history.map(h => h.id === id ? { ...h, pinned: !h.pinned } : h)
+    saveHistory(updated)
+    setHistory(updated)
+  }
+
   const handleOpenDetailFromHistory = (entry: HistoryEntry) => {
     setDetail({ color: entry, sourceId: entry.id, source: 'history' })
   }
@@ -266,6 +272,27 @@ export default function App() {
     if (detail.source === 'history' && !history.find(h => h.id === detail.sourceId)) setDetail(null)
     if (detail.source === 'favorites' && !favorites.find(f => f.id === detail.sourceId)) setDetail(null)
   }, [history, favorites])
+
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
+  const tabOrder: Tab[] = ['picker', 'history', 'favorites']
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    touchStartX.current = null
+    touchStartY.current = null
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return
+    const idx = tabOrder.indexOf(tab)
+    if (dx < 0 && idx < tabOrder.length - 1) setTab(tabOrder[idx + 1])
+    if (dx > 0 && idx > 0) setTab(tabOrder[idx - 1])
+  }
 
   const historyBadge = history.length > 0 ? history.length : null
   const favoritesBadge = favorites.length > 0 ? favorites.length : null
@@ -366,7 +393,11 @@ export default function App() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden">
+      <main
+        className="flex-1 overflow-hidden"
+        onTouchStart={tab !== 'picker' || !imageUrl ? handleTouchStart : undefined}
+        onTouchEnd={tab !== 'picker' || !imageUrl ? handleTouchEnd : undefined}
+      >
         {/* Picker tab */}
         <div className="flex flex-col h-full" style={{ display: tab === 'picker' ? 'flex' : 'none' }}>
           {!imageUrl ? (
@@ -445,6 +476,7 @@ export default function App() {
             isFavorite={isFavorite}
             onRemove={handleRemoveHistoryEntry}
             onOpenDetail={handleOpenDetailFromHistory}
+            onPinEntry={handlePinHistoryEntry}
           />
         </div>
 

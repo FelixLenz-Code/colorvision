@@ -14,6 +14,7 @@ export interface HistoryEntry extends PickedColor {
   id: string
   timestamp: number
   sourceFile?: string
+  pinned?: boolean
 }
 
 export interface FavoriteEntry extends PickedColor {
@@ -129,6 +130,57 @@ export function exportFavoritesToCsv(favorites: FavoriteEntry[], lists: Favorite
     ].map(q).join(','))
   }
   return rows.join('\n')
+}
+
+function htmlEsc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function hexContrast(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#1a1a2e' : '#ffffff'
+}
+
+export function exportFavoritesToHtml(favorites: FavoriteEntry[], listName: string): string {
+  const date = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const cards = favorites.map(f => {
+    const tc = hexContrast(f.hex)
+    const label = f.customLabel ? `<div class="label">${htmlEsc(f.customLabel)}</div>` : ''
+    return `  <div class="card" style="background:${f.hex};color:${tc}">\n    ${label}<div class="name-de">${htmlEsc(f.nameDe)}</div>\n    <div class="name-en">${htmlEsc(f.nameEn)}</div>\n    <div class="hex">${htmlEsc(f.hex)}</div>\n    <div class="rgb">RGB ${f.rgb.r}, ${f.rgb.g}, ${f.rgb.b}</div>\n  </div>`
+  }).join('\n')
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColorVision – ${htmlEsc(listName)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f4f4f8;color:#1a1a2e;padding:28px}
+h1{font-size:1.4rem;margin-bottom:4px}
+.meta{font-size:.8rem;color:#888;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.card{border-radius:16px;padding:16px;min-height:128px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.label{font-size:.65rem;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.name-de{font-size:1rem;font-weight:700;line-height:1.2}
+.name-en{font-size:.75rem;opacity:.72}
+.hex{font-family:monospace;font-size:.8rem;font-weight:600;margin-top:6px}
+.rgb{font-family:monospace;font-size:.68rem;opacity:.72}
+.print-btn{display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;padding:8px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
+@media print{body{background:#fff;padding:12px}.print-btn{display:none}}
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">Drucken / Als PDF speichern</button>
+<h1>ColorVision – ${htmlEsc(listName)}</h1>
+<p class="meta">Exportiert am ${date} &middot; ${favorites.length} Farbe${favorites.length !== 1 ? 'n' : ''}</p>
+<div class="grid">
+${cards}
+</div>
+</body>
+</html>`
 }
 
 export function importFavoritesFromCsv(csv: string, lists: FavoriteList[]): FavoriteEntry[] {

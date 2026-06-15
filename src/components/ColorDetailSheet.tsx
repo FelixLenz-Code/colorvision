@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Heart, Volume2, VolumeX, Copy, Check, Info, X, Trash2, Edit2, AlertTriangle } from 'lucide-react'
+import { Heart, Volume2, VolumeX, Copy, Check, Info, X, Trash2, Edit2, AlertTriangle, Share2 } from 'lucide-react'
 import type { PickedColor } from '../lib/colors'
 import { speakColor, stopSpeaking } from '../lib/tts'
 
@@ -73,6 +73,19 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
     await navigator.clipboard.writeText(value).catch(() => {})
     setCopiedField(field)
     setTimeout(() => setCopiedField(null), 1500)
+  }
+
+  const [shared, setShared] = useState(false)
+
+  const handleShare = async () => {
+    const text = `${color.nameDe} (${color.nameEn})\nHEX: ${color.hex}\nRGB: ${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}`
+    if (navigator.share) {
+      await navigator.share({ title: `ColorVision – ${color.nameDe}`, text }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(text).catch(() => {})
+      setShared(true)
+      setTimeout(() => setShared(false), 1500)
+    }
   }
 
   const saveLabel = () => {
@@ -261,6 +274,16 @@ export default function ColorDetailSheet({ color, isFavorite, onToggleFavorite, 
           >
             {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             {speaking ? 'Stopp' : 'Vorlesen'}
+          </button>
+          <button
+            onClick={handleShare}
+            className="w-12 flex items-center justify-center rounded-xl border border-border hover:bg-muted transition-all text-muted-foreground relative"
+            title="Teilen"
+          >
+            {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+            {shared && (
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap pointer-events-none">Kopiert!</span>
+            )}
           </button>
           {onDelete && (
             <button

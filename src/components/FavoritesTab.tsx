@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { Plus, Upload, Trash2, Edit2, Check, X, Volume2, Heart } from 'lucide-react'
+import { Plus, Upload, Trash2, Edit2, Check, X, Volume2, Heart, ChevronDown } from 'lucide-react'
 import type { FavoriteEntry, FavoriteList } from '../lib/storage'
-import { exportFavoritesToCsv } from '../lib/storage'
+import { exportFavoritesToCsv, exportFavoritesToHtml } from '../lib/storage'
 import { speakColor } from '../lib/tts'
 
 
@@ -28,6 +28,7 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
   const [dragListId, setDragListId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
 
   const activeList = lists.find(l => l.id === activeListId) ?? lists[0]
@@ -41,16 +42,12 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
     setCreatingList(false)
   }
 
-  const handleExport = async () => {
-    const listName = activeList?.name ?? 'favoriten'
-    const safeName = listName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-äöüß]/g, '')
-    const filename = `colorvision-${safeName}.csv`
-    const csv = exportFavoritesToCsv(activeFavorites, lists)
+  const downloadBlob = async (filename: string, content: string, mime: string) => {
     if (window.electronAPI) {
-      await window.electronAPI.saveFile?.(filename, csv)
+      await window.electronAPI.saveFile?.(filename, content)
       return
     }
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const blob = new Blob([content], { type: mime })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -59,6 +56,20 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const safeName = (activeList?.name ?? 'favoriten').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-äöüß]/g, '')
+
+  const handleExportCsv = async () => {
+    setExportMenuOpen(false)
+    const csv = exportFavoritesToCsv(activeFavorites, lists)
+    await downloadBlob(`colorvision-${safeName}.csv`, csv, 'text/csv;charset=utf-8;')
+  }
+
+  const handleExportHtml = async () => {
+    setExportMenuOpen(false)
+    const html = exportFavoritesToHtml(activeFavorites, activeList?.name ?? 'Favoriten')
+    await downloadBlob(`colorvision-${safeName}.html`, html, 'text/html;charset=utf-8;')
   }
 
   const handleImportClick = async () => {
@@ -111,14 +122,39 @@ export default function FavoritesTab({ favorites, lists, onAddList, onRenameList
             <span className="hidden sm:inline">Importieren</span>
           </button>
           {favorites.length > 0 && (
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium px-2 py-1.5 rounded-lg hover:bg-muted/60"
-              title="Favoriten exportieren (.csv)"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 3v12"/><path d="m17 8-5 5-5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-              <span className="hidden sm:inline">Exportieren</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setExportMenuOpen(v => !v)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium px-2 py-1.5 rounded-lg hover:bg-muted/60"
+                title="Favoriten exportieren"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 3v12"/><path d="m17 8-5 5-5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                <span className="hidden sm:inline">Exportieren</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {exportMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1.5 w-44 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
+                    <button
+                      onClick={handleExportCsv}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-muted-foreground shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      Als CSV
+                    </button>
+                    <div className="h-px bg-border mx-3" />
+                    <button
+                      onClick={handleExportHtml}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-muted-foreground shrink-0"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                      Als HTML / PDF
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
